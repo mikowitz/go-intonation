@@ -6,6 +6,23 @@ import (
 	"github.com/mikowitz/intonation/internal"
 )
 
+type TwelveEDOInterval = Interval
+
+var (
+	Unison          = Interval{0, 12}
+	MinorSecond     = Interval{1, 12}
+	MajorSecond     = Interval{2, 12}
+	MinorThird      = Interval{3, 12}
+	MajorThird      = Interval{4, 12}
+	PerfectFourth   = Interval{5, 12}
+	AugmentedFourth = Interval{6, 12}
+	PerfectFifth    = Interval{7, 12}
+	MinorSixth      = Interval{8, 12}
+	MajorSixth      = Interval{9, 12}
+	MinorSeventh    = Interval{10, 12}
+	MajorSeverth    = Interval{11, 12}
+)
+
 type Interval struct {
 	steps, edo uint
 }

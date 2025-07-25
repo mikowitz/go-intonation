@@ -2,6 +2,7 @@ package intonation
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/mikowitz/intonation/internal"
 )
@@ -22,6 +23,25 @@ func (r Ratio) String() string {
 
 func (r Ratio) Float() float64 {
 	return float64(r.numer) / float64(r.denom)
+}
+
+func (r Ratio) Approximate12EDOInterval() ApproximateEDOInterval {
+	return r.ApproximateEDOInterval(12)
+}
+
+func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
+	f := r.Float()
+
+	edoStepCents := 1200.0 / float64(edo)
+
+	jiCents := 1200.0 * math.Log2(f)
+
+	etCents := math.Round(jiCents/edoStepCents) * edoStepCents
+
+	return ApproximateEDOInterval{
+		Interval{uint(etCents / edoStepCents), edo},
+		jiCents - etCents,
+	}
 }
 
 func (r Ratio) dyad() internal.Dyad {
