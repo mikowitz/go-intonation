@@ -24,8 +24,20 @@ func (r Ratio) Float() float64 {
 	return float64(r.numer) / float64(r.denom)
 }
 
+func (r Ratio) dyad() internal.Dyad {
+	return internal.Dyad{256.0, 256.0 * r.Float()}
+}
+
+func (r Ratio) PlayInterval() {
+	r.dyad().PlayInterval()
+}
+
+func (r Ratio) PlayChord() {
+	r.dyad().PlayChord()
+}
+
 func (r Ratio) Play() {
-	internal.Dyad{256.0, 256.0 * r.Float()}.Play()
+	r.dyad().Play()
 }
 
 func gcd(a, b uint) uint {

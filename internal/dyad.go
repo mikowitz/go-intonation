@@ -12,13 +12,24 @@ import (
 
 type Dyad [2]float64
 
-func (d Dyad) Play() {
-	sr := beep.SampleRate(48000)
-	two := sr.N(2 * time.Second)
+const sr = beep.SampleRate(48000)
+
+var two = sr.N(2 * time.Second)
+
+func (d Dyad) PlayInterval() {
 	speaker.Init(sr, 4800)
 
 	root := lowerVolume(newSineTone(sr, d[0]))
 	top := lowerVolume(newSineTone(sr, d[1]))
+
+	playStreamers(beep.Take(two, root), beep.Take(two, top))
+}
+
+func (d Dyad) PlayChord() {
+	speaker.Init(sr, 4800)
+
+	root := newSineTone(sr, d[0])
+	top := newSineTone(sr, d[1])
 
 	chord := effects.Volume{
 		Streamer: beep.Mix(root, top),
@@ -26,18 +37,14 @@ func (d Dyad) Play() {
 		Volume:   -2,
 	}
 
-	ch := make(chan struct{})
-	sounds := []beep.Streamer{
-		beep.Take(two, root),
-		beep.Take(two, top),
-		beep.Take(two*3/2, &chord),
-		beep.Callback(func() {
-			ch <- struct{}{}
-		}),
-	}
+	playStreamers(
+		beep.Take(two, &chord),
+	)
+}
 
-	speaker.Play(beep.Seq(sounds...))
-	<-ch
+func (d Dyad) Play() {
+	d.PlayInterval()
+	d.PlayChord()
 }
 
 func newSineTone(sr beep.SampleRate, freq float64) beep.Streamer {
@@ -54,4 +61,13 @@ func lowerVolume(s beep.Streamer) beep.Streamer {
 		Base:     2,
 		Volume:   -3,
 	}
+}
+
+func playStreamers(streamers ...beep.Streamer) {
+	ch := make(chan struct{})
+	streamers = append(streamers, beep.Callback(func() {
+		ch <- struct{}{}
+	}))
+	speaker.Play(beep.Seq(streamers...))
+	<-ch
 }
