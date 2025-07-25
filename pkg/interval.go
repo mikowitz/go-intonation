@@ -1,6 +1,8 @@
 package intonation
 
 import (
+	"fmt"
+	"log"
 	"math"
 
 	"github.com/mikowitz/intonation/internal"
@@ -9,18 +11,18 @@ import (
 type TwelveEDOInterval = Interval
 
 var (
-	Unison          = Interval{0, 12}
-	MinorSecond     = Interval{1, 12}
-	MajorSecond     = Interval{2, 12}
-	MinorThird      = Interval{3, 12}
-	MajorThird      = Interval{4, 12}
-	PerfectFourth   = Interval{5, 12}
-	AugmentedFourth = Interval{6, 12}
-	PerfectFifth    = Interval{7, 12}
-	MinorSixth      = Interval{8, 12}
-	MajorSixth      = Interval{9, 12}
-	MinorSeventh    = Interval{10, 12}
-	MajorSeverth    = Interval{11, 12}
+	Unison          TwelveEDOInterval = Interval{0, 12}
+	MinorSecond     TwelveEDOInterval = Interval{1, 12}
+	MajorSecond     TwelveEDOInterval = Interval{2, 12}
+	MinorThird      TwelveEDOInterval = Interval{3, 12}
+	MajorThird      TwelveEDOInterval = Interval{4, 12}
+	PerfectFourth   TwelveEDOInterval = Interval{5, 12}
+	AugmentedFourth TwelveEDOInterval = Interval{6, 12}
+	PerfectFifth    TwelveEDOInterval = Interval{7, 12}
+	MinorSixth      TwelveEDOInterval = Interval{8, 12}
+	MajorSixth      TwelveEDOInterval = Interval{9, 12}
+	MinorSeventh    TwelveEDOInterval = Interval{10, 12}
+	MajorSeventh    TwelveEDOInterval = Interval{11, 12}
 )
 
 type Interval struct {
@@ -29,6 +31,50 @@ type Interval struct {
 
 func NewInterval(steps, edo uint) Interval {
 	return Interval{steps, edo}
+}
+
+func (i Interval) String() string {
+	if i.edo == 12 {
+		return i.twelveEDOIntervalString()
+	}
+	noun := "steps"
+	if i.steps == 1 {
+		noun = "step"
+	}
+
+	return fmt.Sprintf("%d-EDO %d %s", i.edo, i.steps, noun)
+}
+
+func (i Interval) twelveEDOIntervalString() string {
+	switch i {
+	case Unison:
+		return "Unison"
+	case MinorSecond:
+		return "Minor Second"
+	case MajorSecond:
+		return "Major Second"
+	case MinorThird:
+		return "Minor Third"
+	case MajorThird:
+		return "Major Third"
+	case PerfectFourth:
+		return "Perfect Fourth"
+	case AugmentedFourth:
+		return "Augmented Fourth"
+	case PerfectFifth:
+		return "Perfect Fifth"
+	case MinorSixth:
+		return "Minor Sixth"
+	case MajorSixth:
+		return "Major Sixth"
+	case MinorSeventh:
+		return "Minor Seventh"
+	case MajorSeventh:
+		return "Major Seventh"
+	default:
+		log.Fatalf("Tried to call twelveEDOIntervalString on %q", i)
+		return ""
+	}
 }
 
 func (i Interval) Cents() float64 {

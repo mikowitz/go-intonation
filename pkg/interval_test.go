@@ -92,3 +92,50 @@ func TestApproximate12EDOIntervalFromInterval(t *testing.T) {
 		})
 	}
 }
+
+func TestPrinting12EDOIntervals(t *testing.T) {
+	testCases := []struct {
+		interval TwelveEDOInterval
+		name     string
+	}{
+		{interval: Unison, name: "Unison"},
+		{interval: MinorSecond, name: "Minor Second"},
+		{interval: MajorSecond, name: "Major Second"},
+		{interval: MinorThird, name: "Minor Third"},
+		{interval: MajorThird, name: "Major Third"},
+		{interval: PerfectFourth, name: "Perfect Fourth"},
+		{interval: AugmentedFourth, name: "Augmented Fourth"},
+		{interval: PerfectFifth, name: "Perfect Fifth"},
+		{interval: MinorSixth, name: "Minor Sixth"},
+		{interval: MajorSixth, name: "Major Sixth"},
+		{interval: MinorSeventh, name: "Minor Seventh"},
+		{interval: MajorSeventh, name: "Major Seventh"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.interval.String() != tc.name {
+				t.Errorf("Expected %s, got %s", tc.name, tc.interval.String())
+			}
+		})
+	}
+}
+
+func TestPrintingIntervals(t *testing.T) {
+	testCases := []struct {
+		interval Interval
+		name     string
+	}{
+		{NewInterval(7, 13), "13-EDO 7 steps"},
+		{NewInterval(1, 17), "17-EDO 1 step"},
+		{NewInterval(8, 20), "20-EDO 8 steps"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.interval.String() != tc.name {
+				t.Errorf("Expected %s, got %s", tc.name, tc.interval.String())
+			}
+		})
+	}
+}
