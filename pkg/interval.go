@@ -1,6 +1,10 @@
 package intonation
 
-import "math"
+import (
+	"math"
+
+	"github.com/mikowitz/intonation/internal"
+)
 
 type Interval struct {
 	steps, edo uint
@@ -18,5 +22,5 @@ func (i Interval) Play() {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
-	dyad{256.0, 256.0 * intervalRatio}.Play()
+	internal.Dyad{256.0, 256.0 * intervalRatio}.Play()
 }

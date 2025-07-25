@@ -1,6 +1,10 @@
 package intonation
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mikowitz/intonation/internal"
+)
 
 type Ratio struct {
 	numer, denom uint
@@ -21,7 +25,7 @@ func (r Ratio) Float() float64 {
 }
 
 func (r Ratio) Play() {
-	dyad{256.0, 256.0 * r.Float()}.Play()
+	internal.Dyad{256.0, 256.0 * r.Float()}.Play()
 }
 
 func gcd(a, b uint) uint {
