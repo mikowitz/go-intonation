@@ -15,9 +15,12 @@ var format string
 
 func DiamondCommand() {
 	diamondCmd := flag.NewFlagSet("diamond", flag.ExitOnError)
-	diamondCmd.StringVar(&format, "format", "diamond", "printing format for the diamond (diamond [default] or square")
+	diamondCmd.StringVar(&format, "format", "diamond", "printing format for the diamond: diamond or square")
+
 	if len(os.Args) < 3 {
 		fmt.Println("  limits\n        the limits used to construct the diamond")
+		diamondCmd.PrintDefaults()
+		os.Exit(1)
 	}
 
 	diamondCmd.Parse(os.Args[3:])

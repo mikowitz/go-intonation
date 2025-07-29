@@ -32,20 +32,6 @@ func TestNewDiamond(t *testing.T) {
 }
 
 func TestDiamondString(t *testing.T) {
-	t.Run("rows and cols", func(t *testing.T) {
-		d := NewDiamond(1, 5, 3)
-
-		expected := `1/1	5/4	3/2
-
-8/5	1/1	6/5
-
-4/3	5/3	1/1`
-
-		if d.String(formatSquare) != expected {
-			t.Errorf("expected\n\n%s\ngot\n\n%s", expected, d.String(formatSquare))
-		}
-	})
-
 	t.Run("diamond", func(t *testing.T) {
 		d := NewDiamond(1, 5, 3)
 
@@ -61,6 +47,19 @@ func TestDiamondString(t *testing.T) {
 
 		if d.String(formatDiamond) != expected {
 			t.Errorf("expected\n\n%q\ngot\n\n%q", expected, d.String(formatDiamond))
+		}
+	})
+	t.Run("square", func(t *testing.T) {
+		d := NewDiamond(1, 5, 3)
+
+		expected := `1/1	5/4	3/2
+
+8/5	1/1	6/5
+
+4/3	5/3	1/1`
+
+		if d.String(formatSquare) != expected {
+			t.Errorf("expected\n\n%s\ngot\n\n%s", expected, d.String(formatSquare))
 		}
 	})
 }
