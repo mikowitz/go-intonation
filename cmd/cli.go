@@ -18,6 +18,8 @@ func Run() {
 		RatioCommand()
 	case "diamond":
 		DiamondCommand()
+	case "lattice":
+		LatticeCommand()
 	default:
 		usage()
 	}
