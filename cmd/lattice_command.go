@@ -20,9 +20,9 @@ var indicesStr string
 
 func LatticeCommand() {
 	latticeCmd := flag.NewFlagSet("lattice", flag.ExitOnError)
-	latticeCmd.StringVar(&indicesStr, "indices", "", "the indices to access the lattice at")
+	latticeCmd.StringVar(&indicesStr, "indices", "", "the indices used to access the lattice")
 
-	if len(os.Args) < 3 {
+	if len(os.Args) < 4 {
 		fmt.Println("  ratios\n        the ratios used to construct the lattice")
 		latticeCmd.PrintDefaults()
 		os.Exit(1)
