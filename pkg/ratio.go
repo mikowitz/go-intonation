@@ -3,9 +3,19 @@ package intonation
 import (
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/mikowitz/intonation/internal"
 )
+
+type RatioParseError struct {
+	input string
+}
+
+func (e *RatioParseError) Error() string {
+	return fmt.Sprintf("could not parse ratio %s", e.input)
+}
 
 type Ratio struct {
 	numer, denom uint
@@ -17,12 +27,47 @@ func NewRatio(n, d uint) Ratio {
 	return Ratio{n / g, d / g}
 }
 
+func NewRatioFromString(input string) (Ratio, error) {
+	parts := strings.Split(input, "/")
+
+	n, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return Ratio{}, &RatioParseError{input}
+	}
+	d, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return Ratio{}, &RatioParseError{input}
+	}
+
+	if n < 0 || d <= 0 {
+		return Ratio{}, &RatioParseError{input}
+	}
+
+	return NewRatio(uint(n), uint(d)), nil
+}
+
 func (r Ratio) String() string {
 	return fmt.Sprintf("%d/%d", r.numer, r.denom)
 }
 
 func (r Ratio) Float() float64 {
 	return float64(r.numer) / float64(r.denom)
+}
+
+func (r Ratio) Mul(rhs Ratio) Ratio {
+	return NewRatio(r.numer*rhs.numer, r.denom*rhs.denom)
+}
+
+func (r Ratio) Pow(base int) Ratio {
+	var n uint = 1
+	var d uint = 1
+
+	for range base {
+		n *= r.numer
+		d *= r.denom
+	}
+
+	return NewRatio(n, d)
 }
 
 func (r Ratio) Approximate12EDOInterval() ApproximateEDOInterval {

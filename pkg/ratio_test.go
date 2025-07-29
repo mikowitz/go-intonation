@@ -1,7 +1,9 @@
 package intonation
 
 import (
+	"fmt"
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -87,6 +89,83 @@ func TestApproximateEDOInterval(t *testing.T) {
 
 			if math.Abs(a.CentsOffset()-tt.expectedCents) > EPSILON {
 				t.Errorf("Expected %.4f cents offset, got %.4f", tt.expectedCents, a.CentsOffset())
+			}
+		})
+	}
+}
+
+func TestRatioMul(t *testing.T) {
+	testCases := []struct {
+		lhs, rhs, expected Ratio
+	}{
+		{NewRatio(1, 1), NewRatio(3, 2), NewRatio(3, 2)},
+		{NewRatio(3, 2), NewRatio(3, 2), NewRatio(9, 4)},
+		{NewRatio(7, 4), NewRatio(11, 7), NewRatio(11, 8)},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s * %s = %s", tc.lhs, tc.rhs, tc.expected), func(t *testing.T) {
+			actual := tc.lhs.Mul(tc.rhs)
+
+			if tc.expected != actual {
+				t.Errorf("expected %s * %s = %s, got %s", tc.lhs, tc.rhs, tc.expected, actual)
+			}
+		})
+	}
+}
+
+func TestRatioPow(t *testing.T) {
+	testCases := []struct {
+		base     Ratio
+		power    int
+		expected Ratio
+	}{
+		{NewRatio(1, 1), 0, NewRatio(1, 1)},
+		{NewRatio(1, 1), 4, NewRatio(1, 1)},
+		{NewRatio(3, 2), 0, NewRatio(1, 1)},
+		{NewRatio(3, 2), 2, NewRatio(9, 4)},
+		{NewRatio(7, 4), 5, NewRatio(16807, 16384)},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s ^ %d = %s", tc.base, tc.power, tc.expected), func(t *testing.T) {
+			actual := tc.base.Pow(tc.power)
+
+			if tc.expected != actual {
+				t.Errorf("expected %s ^ %d = %s, got %s", tc.base, tc.power, tc.expected, actual)
+			}
+		})
+	}
+}
+
+func TestRatioFromString(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected Ratio
+		error    bool
+	}{
+		{"3/2", NewRatio(3, 2), false},
+		{"20/15", NewRatio(4, 3), false},
+		{"three/2", Ratio{}, true},
+		{"three", Ratio{}, true},
+		{"4/three", Ratio{}, true},
+		{"4/-2", Ratio{}, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			actual, err := NewRatioFromString(tc.input)
+
+			if tc.error {
+				expectedErr := RatioParseError{tc.input}
+				if !reflect.DeepEqual(&expectedErr, err) {
+					t.Errorf("expected error %s, got %s", &expectedErr, err)
+				}
+				return
+			}
+
+			if tc.expected != actual {
+				t.Errorf("expected ratio %s, got %s", tc.expected, actual)
 			}
 		})
 	}

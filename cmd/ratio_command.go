@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 
 	intonation "github.com/mikowitz/intonation/pkg"
 )
@@ -30,18 +28,10 @@ func RatioCommand() {
 	}
 
 	ratioStr := os.Args[2]
-	ratioParts := strings.Split(ratioStr, "/")
-
-	n, err := strconv.Atoi(ratioParts[0])
+	ratio, err := intonation.NewRatioFromString(ratioStr)
 	if err != nil {
-		log.Fatalf("error parsing `%s` as int", ratioParts[0])
+		log.Fatal(err)
 	}
-	d, err := strconv.Atoi(ratioParts[1])
-	if err != nil {
-		log.Fatalf("error parsing `%s` as int", ratioParts[1])
-	}
-
-	ratio := intonation.NewRatio(uint(n), uint(d))
 	interval := ratio.Approximate12EDOInterval()
 	fmt.Println(ratio, "\t", ratio.Approximate12EDOInterval())
 
