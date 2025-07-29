@@ -84,7 +84,7 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	etCents := math.Round(jiCents/edoStepCents) * edoStepCents
 
 	return ApproximateEDOInterval{
-		Interval{uint(etCents / edoStepCents), edo},
+		Interval{uint(etCents/edoStepCents) % edo, edo},
 		jiCents - etCents,
 	}
 }

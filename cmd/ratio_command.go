@@ -33,7 +33,7 @@ func RatioCommand() {
 		log.Fatal(err)
 	}
 	interval := ratio.Approximate12EDOInterval()
-	fmt.Println(ratio, "\t", ratio.Approximate12EDOInterval())
+	fmt.Println(ratio, "\t", interval)
 
 	ratioCmd.Parse(os.Args[3:])
 

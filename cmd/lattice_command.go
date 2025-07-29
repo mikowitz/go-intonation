@@ -52,9 +52,10 @@ func LatticeCommand() {
 
 	}
 
-	result, err := lattice.At(indices...)
+	ratio, err := lattice.At(indices...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(result)
+	interval := ratio.Approximate12EDOInterval()
+	fmt.Println(ratio, "\t", interval)
 }

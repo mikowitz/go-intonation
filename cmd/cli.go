@@ -37,5 +37,7 @@ func usage() {
     optionally playing both intervals for audio comparison
   diamond <limits> [--square]
     Create a otonality/utonality diamond from the provided limits
+  lattice <dimensions> --indices indices
+    Construct a just intonation lattice and index into it
 `)
 }
