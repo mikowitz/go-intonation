@@ -100,7 +100,7 @@ func (i Interval) dyad() []float64 {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
-	return []float64{256.0, 256.0 * intervalRatio}
+	return []float64{MiddleC, MiddleC * intervalRatio}
 }
 
 func (i Interval) PlayInterval(output AudioOutput) error {

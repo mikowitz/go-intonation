@@ -89,8 +89,7 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 }
 
 func (r Ratio) dyad() []float64 {
-	// return internal.Dyad{256.0, 256.0 * r.Float()}
-	return []float64{256.0, 256.0 * r.Float()}
+	return []float64{MiddleC, MiddleC * r.Float()}
 }
 
 func (r Ratio) PlayInterval(output AudioOutput) error {

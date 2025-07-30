@@ -9,6 +9,11 @@ import (
 	"github.com/gopxl/beep/v2/speaker"
 )
 
+const (
+	VolumeBase   = 2
+	VolumeVolume = -3
+)
+
 type BeepAudioOutput struct {
 	SampleRate beep.SampleRate
 }
@@ -26,8 +31,8 @@ func (output BeepAudioOutput) PlayChord(frequencies []float64, duration time.Dur
 
 	chord := &effects.Volume{
 		Streamer: beep.Mix(chordTones...),
-		Base:     2,
-		Volume:   -2,
+		Base:     VolumeBase,
+		Volume:   VolumeVolume,
 	}
 
 	ch := make(chan struct{})
@@ -52,8 +57,8 @@ func (output BeepAudioOutput) PlayTone(frequency float64, duration time.Duration
 
 	tone = &effects.Volume{
 		Streamer: tone,
-		Base:     2,
-		Volume:   -3,
+		Base:     VolumeBase,
+		Volume:   VolumeVolume,
 	}
 
 	ch := make(chan struct{})
