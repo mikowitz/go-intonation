@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
-
-	"github.com/mikowitz/intonation/internal"
+	"time"
 )
 
 type TwelveEDOInterval = Interval
@@ -97,21 +96,30 @@ func (i Interval) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	}
 }
 
-func (i Interval) dyad() internal.Dyad {
+func (i Interval) dyad() []float64 {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
-	return internal.Dyad{256.0, 256.0 * intervalRatio}
+	return []float64{256.0, 256.0 * intervalRatio}
 }
 
-func (i Interval) PlayInterval() {
-	i.dyad().PlayInterval()
+func (i Interval) PlayInterval(output AudioOutput) error {
+	dyad := i.dyad()
+	err := output.PlayTone(dyad[0], 2*time.Second)
+	if err != nil {
+		return err
+	}
+	return output.PlayTone(dyad[1], 2*time.Second)
 }
 
-func (i Interval) PlayChord() {
-	i.dyad().PlayChord()
+func (i Interval) PlayChord(output AudioOutput) error {
+	return output.PlayChord(i.dyad(), 2*time.Second)
 }
 
-func (i Interval) Play() {
-	i.dyad().Play()
+func (i Interval) Play(output AudioOutput) error {
+	err := i.PlayInterval(output)
+	if err != nil {
+		return err
+	}
+	return i.PlayChord(output)
 }

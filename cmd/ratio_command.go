@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/gopxl/beep/v2"
+	"github.com/mikowitz/intonation/internal"
 	intonation "github.com/mikowitz/intonation/pkg"
 )
 
@@ -39,9 +41,10 @@ func RatioCommand() {
 
 	shouldPlay := !noPlay && play
 	if shouldPlay {
-		ratio.Play()
+		output := internal.BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
+		ratio.Play(output)
 		if compare {
-			interval.Interval().PlayChord()
+			interval.Interval().PlayChord(output)
 		}
 	}
 }

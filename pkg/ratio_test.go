@@ -1,10 +1,12 @@
 package intonation
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNewRatio(t *testing.T) {
@@ -161,6 +163,9 @@ func TestRatioFromString(t *testing.T) {
 				if !reflect.DeepEqual(&expectedErr, err) {
 					t.Errorf("expected error %s, got %s", &expectedErr, err)
 				}
+				if err.Error() != fmt.Sprintf("could not parse ratio %s", tc.input) {
+					t.Errorf("expected `could not parse ratio %s`, got `%s`", tc.input, err.Error())
+				}
 				return
 			}
 
@@ -169,4 +174,156 @@ func TestRatioFromString(t *testing.T) {
 			}
 		})
 	}
+}
+
+type TestAudioOutputRecord struct {
+	f     float64
+	chord bool
+}
+
+type TestAudioOutput struct {
+	output []TestAudioOutputRecord
+}
+
+func (output *TestAudioOutput) PlayChord(frequencies []float64, duration time.Duration) error {
+	for _, f := range frequencies {
+		output.output = append(output.output, TestAudioOutputRecord{f, true})
+	}
+	return nil
+}
+
+func (output *TestAudioOutput) PlayTone(frequency float64, duration time.Duration) error {
+	output.output = append(output.output, TestAudioOutputRecord{frequency, false})
+	return nil
+}
+
+func TestRatioPlayInterval(t *testing.T) {
+	r := NewRatio(3, 2)
+	output := &TestAudioOutput{}
+
+	r.PlayInterval(output)
+
+	if len(output.output) != 2 {
+		t.Errorf("expected two tones played, got %d", len(output.output))
+	}
+	expected := []TestAudioOutputRecord{
+		{f: 256.0, chord: false},
+		{f: 256.0 * 1.5, chord: false},
+	}
+	if !reflect.DeepEqual(expected, output.output) {
+		t.Errorf("expected\n%v\ngot\n%v", expected, output.output)
+	}
+}
+
+func TestRatioPlayChord(t *testing.T) {
+	r := NewRatio(3, 2)
+	output := &TestAudioOutput{}
+
+	r.PlayChord(output)
+
+	if len(output.output) != 2 {
+		t.Errorf("expected two tones played, got %d", len(output.output))
+	}
+	expected := []TestAudioOutputRecord{
+		{f: 256.0, chord: true},
+		{f: 256.0 * 1.5, chord: true},
+	}
+	if !reflect.DeepEqual(expected, output.output) {
+		t.Errorf("expected\n%v\ngot\n%v", expected, output.output)
+	}
+}
+
+func TestRatioPlay(t *testing.T) {
+	r := NewRatio(3, 2)
+	output := &TestAudioOutput{}
+
+	r.Play(output)
+
+	if len(output.output) != 4 {
+		t.Errorf("expected 4 tones played, got %d", len(output.output))
+	}
+	expected := []TestAudioOutputRecord{
+		{f: 256.0, chord: false},
+		{f: 256.0 * 1.5, chord: false},
+		{f: 256.0, chord: true},
+		{f: 256.0 * 1.5, chord: true},
+	}
+	if !reflect.DeepEqual(expected, output.output) {
+		t.Errorf("expected\n%v\ngot\n%v", expected, output.output)
+	}
+}
+
+type IntervalErroringOutput struct{}
+
+func (output IntervalErroringOutput) PlayTone(frequency float64, duration time.Duration) error {
+	return errors.New("couldn't play tone")
+}
+
+func (output IntervalErroringOutput) PlayChord(frequencies []float64, duration time.Duration) error {
+	return nil
+}
+
+func TestRatioPlayError(t *testing.T) {
+	r := NewRatio(3, 2)
+	output := IntervalErroringOutput{}
+	expected := errors.New("couldn't play tone")
+	t.Run("play interval", func(t *testing.T) {
+		err := r.PlayInterval(output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+
+	t.Run("play chord", func(t *testing.T) {
+		err := r.PlayChord(output)
+		if err != nil {
+			t.Errorf("expected no error, got %s", err)
+		}
+	})
+
+	t.Run("play", func(t *testing.T) {
+		err := r.Play(output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+}
+
+type ChordErroringOutput struct{}
+
+func (output ChordErroringOutput) PlayTone(frequency float64, duration time.Duration) error {
+	return nil
+}
+
+func (output ChordErroringOutput) PlayChord(frequencies []float64, duration time.Duration) error {
+	return errors.New("couldn't play chord")
+}
+
+func TestRatioPlayErrorWithChord(t *testing.T) {
+	r := NewRatio(3, 2)
+	output := ChordErroringOutput{}
+	expected := errors.New("couldn't play chord")
+	t.Run("play interval", func(t *testing.T) {
+		err := r.PlayInterval(output)
+		if err != nil {
+			t.Errorf("expected no error, got %s", err)
+		}
+	})
+
+	t.Run("play chord", func(t *testing.T) {
+		err := r.PlayChord(output)
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+
+	t.Run("play", func(t *testing.T) {
+		err := r.Play(output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
 }

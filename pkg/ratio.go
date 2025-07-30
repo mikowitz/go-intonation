@@ -5,8 +5,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
-
-	"github.com/mikowitz/intonation/internal"
+	"time"
 )
 
 type RatioParseError struct {
@@ -89,20 +88,30 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	}
 }
 
-func (r Ratio) dyad() internal.Dyad {
-	return internal.Dyad{256.0, 256.0 * r.Float()}
+func (r Ratio) dyad() []float64 {
+	// return internal.Dyad{256.0, 256.0 * r.Float()}
+	return []float64{256.0, 256.0 * r.Float()}
 }
 
-func (r Ratio) PlayInterval() {
-	r.dyad().PlayInterval()
+func (r Ratio) PlayInterval(output AudioOutput) error {
+	dyad := r.dyad()
+	err := output.PlayTone(dyad[0], 2*time.Second)
+	if err != nil {
+		return err
+	}
+	return output.PlayTone(dyad[1], 2*time.Second)
 }
 
-func (r Ratio) PlayChord() {
-	r.dyad().PlayChord()
+func (r Ratio) PlayChord(output AudioOutput) error {
+	return output.PlayChord(r.dyad(), 2*time.Second)
 }
 
-func (r Ratio) Play() {
-	r.dyad().Play()
+func (r Ratio) Play(output AudioOutput) error {
+	err := r.PlayInterval(output)
+	if err != nil {
+		return err
+	}
+	return r.PlayChord(output)
 }
 
 func gcd(a, b uint) uint {
