@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"time"
 
 	"github.com/gopxl/beep/v2"
@@ -18,7 +19,13 @@ type BeepAudioOutput struct {
 	SampleRate beep.SampleRate
 }
 
-func (output BeepAudioOutput) PlayChord(frequencies []float64, duration time.Duration) error {
+func (output BeepAudioOutput) PlayChord(ctx context.Context, frequencies []float64, duration time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	chordTones := []beep.Streamer{}
 
 	for _, f := range frequencies {
@@ -36,18 +43,30 @@ func (output BeepAudioOutput) PlayChord(frequencies []float64, duration time.Dur
 	}
 
 	ch := make(chan struct{})
+
 	speaker.Play(beep.Seq(
 		beep.Take(output.SampleRate.N(duration), chord),
 		beep.Callback(func() {
 			ch <- struct{}{}
 		}),
 	))
-	<-ch
 
-	return nil
+	select {
+	case <-ctx.Done():
+		speaker.Clear()
+		return ctx.Err()
+	case <-ch:
+		return nil
+	}
 }
 
-func (output BeepAudioOutput) PlayTone(frequency float64, duration time.Duration) error {
+func (output BeepAudioOutput) PlayTone(ctx context.Context, frequency float64, duration time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
 	speaker.Init(output.SampleRate, 4800)
 
 	tone, err := generators.SineTone(output.SampleRate, frequency)
@@ -62,6 +81,7 @@ func (output BeepAudioOutput) PlayTone(frequency float64, duration time.Duration
 	}
 
 	ch := make(chan struct{})
+
 	streamers := []beep.Streamer{
 		beep.Take(output.SampleRate.N(duration), tone),
 		beep.Callback(func() {
@@ -69,7 +89,12 @@ func (output BeepAudioOutput) PlayTone(frequency float64, duration time.Duration
 		}),
 	}
 	speaker.Play(beep.Seq(streamers...))
-	<-ch
 
-	return nil
+	select {
+	case <-ctx.Done():
+		speaker.Clear()
+		return ctx.Err()
+	case <-ch:
+		return nil
+	}
 }

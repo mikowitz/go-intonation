@@ -1,16 +1,19 @@
 package intonation
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 const MiddleC float64 = 256.0
 
 type AudioOutput interface {
-	PlayTone(frequency float64, duration time.Duration) error
-	PlayChord(frequencies []float64, duration time.Duration) error
+	PlayTone(ctx context.Context, frequency float64, duration time.Duration) error
+	PlayChord(ctx context.Context, frequencies []float64, duration time.Duration) error
 }
 
 type Playable interface {
-	Play(output AudioOutput) error
-	PlayInterval(output AudioOutput) error
-	PlayChord(output AudioOutput) error
+	Play(ctx context.Context, output AudioOutput) error
+	PlayInterval(ctx context.Context, output AudioOutput) error
+	PlayChord(ctx context.Context, output AudioOutput) error
 }

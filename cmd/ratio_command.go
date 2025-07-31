@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -41,10 +42,12 @@ func RatioCommand() {
 
 	shouldPlay := !noPlay && play
 	if shouldPlay {
+		ctx, ctxCancel := context.WithCancel(context.Background())
+		defer ctxCancel()
 		output := internal.BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
-		ratio.Play(output)
+		ratio.Play(ctx, output)
 		if compare {
-			interval.Interval().PlayChord(output)
+			interval.Interval().PlayChord(ctx, output)
 		}
 	}
 }

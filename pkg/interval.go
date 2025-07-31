@@ -1,6 +1,7 @@
 package intonation
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -103,23 +104,23 @@ func (i Interval) dyad() []float64 {
 	return []float64{MiddleC, MiddleC * intervalRatio}
 }
 
-func (i Interval) PlayInterval(output AudioOutput) error {
+func (i Interval) PlayInterval(ctx context.Context, output AudioOutput) error {
 	dyad := i.dyad()
-	err := output.PlayTone(dyad[0], 2*time.Second)
+	err := output.PlayTone(ctx, dyad[0], 2*time.Second)
 	if err != nil {
 		return err
 	}
-	return output.PlayTone(dyad[1], 2*time.Second)
+	return output.PlayTone(ctx, dyad[1], 2*time.Second)
 }
 
-func (i Interval) PlayChord(output AudioOutput) error {
-	return output.PlayChord(i.dyad(), 2*time.Second)
+func (i Interval) PlayChord(ctx context.Context, output AudioOutput) error {
+	return output.PlayChord(ctx, i.dyad(), 2*time.Second)
 }
 
-func (i Interval) Play(output AudioOutput) error {
-	err := i.PlayInterval(output)
+func (i Interval) Play(ctx context.Context, output AudioOutput) error {
+	err := i.PlayInterval(ctx, output)
 	if err != nil {
 		return err
 	}
-	return i.PlayChord(output)
+	return i.PlayChord(ctx, output)
 }

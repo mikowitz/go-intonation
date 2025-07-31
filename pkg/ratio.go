@@ -1,6 +1,7 @@
 package intonation
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
@@ -92,25 +93,25 @@ func (r Ratio) dyad() []float64 {
 	return []float64{MiddleC, MiddleC * r.Float()}
 }
 
-func (r Ratio) PlayInterval(output AudioOutput) error {
+func (r Ratio) PlayInterval(ctx context.Context, output AudioOutput) error {
 	dyad := r.dyad()
-	err := output.PlayTone(dyad[0], 2*time.Second)
+	err := output.PlayTone(ctx, dyad[0], 2*time.Second)
 	if err != nil {
 		return err
 	}
-	return output.PlayTone(dyad[1], 2*time.Second)
+	return output.PlayTone(ctx, dyad[1], 2*time.Second)
 }
 
-func (r Ratio) PlayChord(output AudioOutput) error {
-	return output.PlayChord(r.dyad(), 2*time.Second)
+func (r Ratio) PlayChord(ctx context.Context, output AudioOutput) error {
+	return output.PlayChord(ctx, r.dyad(), 2*time.Second)
 }
 
-func (r Ratio) Play(output AudioOutput) error {
-	err := r.PlayInterval(output)
+func (r Ratio) Play(ctx context.Context, output AudioOutput) error {
+	err := r.PlayInterval(ctx, output)
 	if err != nil {
 		return err
 	}
-	return r.PlayChord(output)
+	return r.PlayChord(ctx, output)
 }
 
 func gcd(a, b uint) uint {
