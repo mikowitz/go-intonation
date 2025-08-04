@@ -1,61 +1,56 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
-	"strings"
 
 	intonation "github.com/mikowitz/intonation/pkg"
+	"github.com/spf13/cobra"
 )
 
-// `
-// cmd lattice new 3/2,5/4,7/4 --name=trio
-// cmd lattice get 1,1,1 --name=trio
-// `
+var (
+	latticeRatios  []string
+	latticeIndices []int
+)
 
-var indicesStr string
+var latticeCmd = &cobra.Command{
+	Use:   "lattice <ratios>",
+	Short: "Construct a just intonation lattice and index into it",
+	Long:  `Construct a just intonation lattice from comma-separated ratios and index into it using comma-separated indices.`,
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(latticeIndices) > len(latticeRatios) {
+			log.Fatal("more indices than dimensions to index into")
+		}
 
-func LatticeCommand() {
-	latticeCmd := flag.NewFlagSet("lattice", flag.ExitOnError)
-	latticeCmd.StringVar(&indicesStr, "indices", "", "the indices used to access the lattice")
+		ratios := parseRatios(latticeRatios)
+		lattice := intonation.NewLattice(ratios...)
 
-	if len(os.Args) < 4 {
-		fmt.Println("  ratios\n        the ratios used to construct the lattice")
-		latticeCmd.PrintDefaults()
-		os.Exit(1)
-	}
-
-	ratiosStr := os.Args[2]
-	latticeCmd.Parse(os.Args[3:])
-
-	ratios := []intonation.Ratio{}
-	for _, r := range strings.Split(ratiosStr, ",") {
-		ratio, err := intonation.NewRatioFromString(r)
+		ratio, err := lattice.At(latticeIndices...)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ratios = append(ratios, ratio)
-	}
+		interval := ratio.Approximate12EDOInterval()
+		fmt.Println(ratio, "\t", interval)
+	},
+}
 
-	lattice := intonation.NewLattice(ratios...)
-
-	indices := []int{}
-	for _, i := range strings.Split(indicesStr, ",") {
-		index, err := strconv.Atoi(i)
+func parseRatios(input []string) []intonation.Ratio {
+	output := []intonation.Ratio{}
+	for _, i := range input {
+		n, err := intonation.NewRatioFromString(i)
 		if err != nil {
 			log.Fatal(err)
 		}
-		indices = append(indices, index)
-
+		output = append(output, n)
 	}
+	return output
+}
 
-	ratio, err := lattice.At(indices...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	interval := ratio.Approximate12EDOInterval()
-	fmt.Println(ratio, "\t", interval)
+func init() {
+	latticeCmd.Flags().StringSliceVarP(&latticeRatios, "ratios", "r", []string{}, "the ratios used to construct the lattice dimensions (required)")
+	latticeCmd.Flags().IntSliceVarP(&latticeIndices, "indices", "i", []int{}, "the indices used to access the lattice (required)")
+
+	latticeCmd.MarkFlagRequired("ratios")
+	latticeCmd.MarkFlagRequired("indices")
 }

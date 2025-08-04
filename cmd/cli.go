@@ -3,41 +3,29 @@ package cmd
 import (
 	"fmt"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
-func Run() {
-	if len(os.Args) < 2 {
-		usage()
-		os.Exit(1)
-	}
+var rootCmd = &cobra.Command{
+	Use:   "go-intonation",
+	Short: "A CLI tool for working with just intonation",
+	Long:  `A command line tool for working with just intonation, ratios, diamonds, and lattices.`,
+}
 
-	switch os.Args[1] {
-	case "--help", "-h":
-		usage()
-	case "ratio":
-		RatioCommand()
-	case "diamond":
-		DiamondCommand()
-	case "lattice":
-		LatticeCommand()
-	default:
-		usage()
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
-func usage() {
-	fmt.Print(`Usage:
+func init() {
+	rootCmd.AddCommand(ratioCmd)
+	rootCmd.AddCommand(diamondCmd)
+	rootCmd.AddCommand(latticeCmd)
+}
 
-./go-intonation
-
-  -h / --help
-    Print this message
-  ratio <ratio> [--[no]-play] [--compare]
-    Compare a ratio to its closest 12-EDO interval,
-    optionally playing both intervals for audio comparison
-  diamond <limits> [--square]
-    Create a otonality/utonality diamond from the provided limits
-  lattice <dimensions> --indices indices
-    Construct a just intonation lattice and index into it
-`)
+func Run() {
+	Execute()
 }

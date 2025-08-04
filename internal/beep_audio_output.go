@@ -20,11 +20,7 @@ type BeepAudioOutput struct {
 }
 
 func (output BeepAudioOutput) PlayChord(ctx context.Context, frequencies []float64, duration time.Duration) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
+	speaker.Init(output.SampleRate, 4800)
 
 	chordTones := []beep.Streamer{}
 
@@ -61,12 +57,6 @@ func (output BeepAudioOutput) PlayChord(ctx context.Context, frequencies []float
 }
 
 func (output BeepAudioOutput) PlayTone(ctx context.Context, frequency float64, duration time.Duration) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-
 	speaker.Init(output.SampleRate, 4800)
 
 	tone, err := generators.SineTone(output.SampleRate, frequency)
