@@ -1,6 +1,7 @@
 package intonation
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -28,10 +29,14 @@ func NewDiamond(limits ...uint) Diamond {
 }
 
 func (d Diamond) String(format DiamondStringFormat) string {
-	if format == FormatSquare {
+	switch format {
+	case FormatSquare:
 		return d.asSquareString()
+	case FormatDiamond:
+		return d.asDiamondString()
+	default:
+		return fmt.Sprintf("unknown diamond format: %s", format)
 	}
-	return d.asDiamondString()
 }
 
 func (d Diamond) asSquareString() string {
