@@ -22,3 +22,7 @@ func (a ApproximateEDOInterval) String() string {
 	}
 	return fmt.Sprintf("%s (%s%.4f)", a.interval, sign, a.centsOffset)
 }
+
+func (a ApproximateEDOInterval) Dyad() []float64 {
+	return a.interval.Dyad()
+}

@@ -36,11 +36,11 @@ var ratioCmd = &cobra.Command{
 			defer ctxCancel()
 			output := internal.BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
 			if ratioInterval {
-				ratio.PlayInterval(ctx, output)
+				intonation.PlayInterval(ratio, ctx, output)
 			}
-			ratio.PlayChord(ctx, output)
+			intonation.PlayChord(ratio, ctx, output)
 			if ratioCompare {
-				interval.Interval().PlayChord(ctx, output)
+				intonation.PlayChord(interval, ctx, output)
 			}
 		}
 	},

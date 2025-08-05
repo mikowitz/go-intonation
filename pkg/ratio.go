@@ -1,12 +1,10 @@
 package intonation
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type RatioParseError struct {
@@ -89,29 +87,8 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	}
 }
 
-func (r Ratio) dyad() []float64 {
+func (r Ratio) Dyad() []float64 {
 	return []float64{MiddleC, MiddleC * r.Float()}
-}
-
-func (r Ratio) PlayInterval(ctx context.Context, output AudioOutput) error {
-	dyad := r.dyad()
-	err := output.PlayTone(ctx, dyad[0], 2*time.Second)
-	if err != nil {
-		return err
-	}
-	return output.PlayTone(ctx, dyad[1], 2*time.Second)
-}
-
-func (r Ratio) PlayChord(ctx context.Context, output AudioOutput) error {
-	return output.PlayChord(ctx, r.dyad(), 2*time.Second)
-}
-
-func (r Ratio) Play(ctx context.Context, output AudioOutput) error {
-	err := r.PlayInterval(ctx, output)
-	if err != nil {
-		return err
-	}
-	return r.PlayChord(ctx, output)
 }
 
 func gcd(a, b uint) uint {

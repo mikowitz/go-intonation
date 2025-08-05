@@ -1,11 +1,9 @@
 package intonation
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math"
-	"time"
 )
 
 type TwelveEDOInterval = Interval
@@ -97,30 +95,9 @@ func (i Interval) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	}
 }
 
-func (i Interval) dyad() []float64 {
+func (i Interval) Dyad() []float64 {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
 	return []float64{MiddleC, MiddleC * intervalRatio}
-}
-
-func (i Interval) PlayInterval(ctx context.Context, output AudioOutput) error {
-	dyad := i.dyad()
-	err := output.PlayTone(ctx, dyad[0], 2*time.Second)
-	if err != nil {
-		return err
-	}
-	return output.PlayTone(ctx, dyad[1], 2*time.Second)
-}
-
-func (i Interval) PlayChord(ctx context.Context, output AudioOutput) error {
-	return output.PlayChord(ctx, i.dyad(), 2*time.Second)
-}
-
-func (i Interval) Play(ctx context.Context, output AudioOutput) error {
-	err := i.PlayInterval(ctx, output)
-	if err != nil {
-		return err
-	}
-	return i.PlayChord(ctx, output)
 }
