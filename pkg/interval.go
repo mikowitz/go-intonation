@@ -2,7 +2,6 @@ package intonation
 
 import (
 	"fmt"
-	"log"
 	"math"
 )
 
@@ -33,45 +32,47 @@ func NewInterval(steps, edo uint) Interval {
 
 func (i Interval) String() string {
 	if i.edo == 12 {
-		return i.twelveEDOIntervalString()
+		s, err := i.twelveEDOIntervalString()
+		if err != nil {
+			return err.Error()
+		}
+		return s
 	}
 	noun := "steps"
 	if i.steps == 1 {
 		noun = "step"
 	}
-
 	return fmt.Sprintf("%d-EDO %d %s", i.edo, i.steps, noun)
 }
 
-func (i Interval) twelveEDOIntervalString() string {
+func (i Interval) twelveEDOIntervalString() (string, error) {
 	switch i {
 	case Unison:
-		return "Unison"
+		return "Unison", nil
 	case MinorSecond:
-		return "Minor Second"
+		return "Minor Second", nil
 	case MajorSecond:
-		return "Major Second"
+		return "Major Second", nil
 	case MinorThird:
-		return "Minor Third"
+		return "Minor Third", nil
 	case MajorThird:
-		return "Major Third"
+		return "Major Third", nil
 	case PerfectFourth:
-		return "Perfect Fourth"
+		return "Perfect Fourth", nil
 	case AugmentedFourth:
-		return "Augmented Fourth"
+		return "Augmented Fourth", nil
 	case PerfectFifth:
-		return "Perfect Fifth"
+		return "Perfect Fifth", nil
 	case MinorSixth:
-		return "Minor Sixth"
+		return "Minor Sixth", nil
 	case MajorSixth:
-		return "Major Sixth"
+		return "Major Sixth", nil
 	case MinorSeventh:
-		return "Minor Seventh"
+		return "Minor Seventh", nil
 	case MajorSeventh:
-		return "Major Seventh"
+		return "Major Seventh", nil
 	default:
-		log.Fatalf("Tried to call twelveEDOIntervalString on %q", i)
-		return ""
+		return "", fmt.Errorf("invalid 12-EDO interval: %v", i)
 	}
 }
 

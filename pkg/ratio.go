@@ -1,19 +1,14 @@
 package intonation
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 )
 
-type RatioParseError struct {
-	input string
-}
-
-func (e *RatioParseError) Error() string {
-	return fmt.Sprintf("could not parse ratio %s", e.input)
-}
+var ErrInvalidRatio = errors.New("invalid ratio format")
 
 type Ratio struct {
 	numer, denom uint
@@ -28,17 +23,21 @@ func NewRatio(n, d uint) Ratio {
 func NewRatioFromString(input string) (Ratio, error) {
 	parts := strings.Split(input, "/")
 
+	if len(parts) != 2 {
+		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
+	}
+
 	n, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
 	}
 	d, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
 	}
 
 	if n < 0 || d <= 0 {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
 	}
 
 	return NewRatio(uint(n), uint(d)), nil

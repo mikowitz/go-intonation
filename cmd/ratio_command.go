@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/gopxl/beep/v2"
 	"github.com/mikowitz/intonation/internal"
@@ -23,10 +22,10 @@ var ratioCmd = &cobra.Command{
 	Short: "Compare a ratio to its closest 12-EDO interval",
 	Long:  `Compare a ratio to its closest 12-EDO interval, optionally playing both intervals for audio comparison.`,
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ratio, err := intonation.NewRatioFromString(args[0])
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		interval := ratio.Approximate12EDOInterval()
 		fmt.Println(ratio, "\t", interval)
@@ -43,6 +42,7 @@ var ratioCmd = &cobra.Command{
 				intonation.PlayChord(interval, ctx, output)
 			}
 		}
+		return nil
 	},
 }
 

@@ -153,6 +153,7 @@ func TestRatioFromString(t *testing.T) {
 		{"three", Ratio{}, true},
 		{"4/three", Ratio{}, true},
 		{"4/-2", Ratio{}, true},
+		{"3", Ratio{}, true},
 	}
 
 	for _, tc := range testCases {
@@ -160,12 +161,12 @@ func TestRatioFromString(t *testing.T) {
 			actual, err := NewRatioFromString(tc.input)
 
 			if tc.error {
-				expectedErr := RatioParseError{tc.input}
-				if !reflect.DeepEqual(&expectedErr, err) {
-					t.Errorf("expected error %s, got %s", &expectedErr, err)
+				expectedErr := fmt.Errorf("%s %q", ErrInvalidRatio, tc.input)
+				if expectedErr.Error() != err.Error() {
+					t.Errorf("expected error %s, got %s", expectedErr, err)
 				}
-				if err.Error() != fmt.Sprintf("could not parse ratio %s", tc.input) {
-					t.Errorf("expected `could not parse ratio %s`, got `%s`", tc.input, err.Error())
+				if err.Error() != fmt.Sprintf("invalid ratio format %q", tc.input) {
+					t.Errorf("expected `invalid ratio format %q`, got `%s`", tc.input, err.Error())
 				}
 				return
 			}
@@ -202,7 +203,7 @@ func TestRatioPlayInterval(t *testing.T) {
 	r := NewRatio(3, 2)
 	output := &TestAudioOutput{}
 
-	r.PlayInterval(context.Background(), output)
+	PlayInterval(r, context.Background(), output)
 
 	if len(output.output) != 2 {
 		t.Errorf("expected two tones played, got %d", len(output.output))
@@ -220,7 +221,7 @@ func TestRatioPlayChord(t *testing.T) {
 	r := NewRatio(3, 2)
 	output := &TestAudioOutput{}
 
-	r.PlayChord(context.Background(), output)
+	PlayChord(r, context.Background(), output)
 
 	if len(output.output) != 2 {
 		t.Errorf("expected two tones played, got %d", len(output.output))
@@ -238,7 +239,7 @@ func TestRatioPlay(t *testing.T) {
 	r := NewRatio(3, 2)
 	output := &TestAudioOutput{}
 
-	r.Play(context.Background(), output)
+	Play(r, context.Background(), output)
 
 	if len(output.output) != 4 {
 		t.Errorf("expected 4 tones played, got %d", len(output.output))
@@ -269,7 +270,7 @@ func TestRatioPlayError(t *testing.T) {
 	output := IntervalErroringOutput{}
 	expected := errors.New("couldn't play tone")
 	t.Run("play interval", func(t *testing.T) {
-		err := r.PlayInterval(context.Background(), output)
+		err := PlayInterval(r, context.Background(), output)
 
 		if expected.Error() != err.Error() {
 			t.Errorf("expected %s, got %s", expected, err)
@@ -277,14 +278,14 @@ func TestRatioPlayError(t *testing.T) {
 	})
 
 	t.Run("play chord", func(t *testing.T) {
-		err := r.PlayChord(context.Background(), output)
+		err := PlayChord(r, context.Background(), output)
 		if err != nil {
 			t.Errorf("expected no error, got %s", err)
 		}
 	})
 
 	t.Run("play", func(t *testing.T) {
-		err := r.Play(context.Background(), output)
+		err := Play(r, context.Background(), output)
 
 		if expected.Error() != err.Error() {
 			t.Errorf("expected %s, got %s", expected, err)
@@ -307,21 +308,21 @@ func TestRatioPlayErrorWithChord(t *testing.T) {
 	output := ChordErroringOutput{}
 	expected := errors.New("couldn't play chord")
 	t.Run("play interval", func(t *testing.T) {
-		err := r.PlayInterval(context.Background(), output)
+		err := PlayInterval(r, context.Background(), output)
 		if err != nil {
 			t.Errorf("expected no error, got %s", err)
 		}
 	})
 
 	t.Run("play chord", func(t *testing.T) {
-		err := r.PlayChord(context.Background(), output)
+		err := PlayChord(r, context.Background(), output)
 		if expected.Error() != err.Error() {
 			t.Errorf("expected %s, got %s", expected, err)
 		}
 	})
 
 	t.Run("play", func(t *testing.T) {
-		err := r.Play(context.Background(), output)
+		err := Play(r, context.Background(), output)
 
 		if expected.Error() != err.Error() {
 			t.Errorf("expected %s, got %s", expected, err)
