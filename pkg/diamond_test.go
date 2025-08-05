@@ -45,8 +45,8 @@ func TestDiamondString(t *testing.T) {
 
 		4/3`
 
-		if d.String(formatDiamond) != expected {
-			t.Errorf("expected\n\n%q\ngot\n\n%q", expected, d.String(formatDiamond))
+		if d.String(FormatDiamond) != expected {
+			t.Errorf("expected\n\n%q\ngot\n\n%q", expected, d.String(FormatDiamond))
 		}
 	})
 	t.Run("square", func(t *testing.T) {
@@ -58,8 +58,8 @@ func TestDiamondString(t *testing.T) {
 
 4/3	5/3	1/1`
 
-		if d.String(formatSquare) != expected {
-			t.Errorf("expected\n\n%s\ngot\n\n%s", expected, d.String(formatSquare))
+		if d.String(FormatSquare) != expected {
+			t.Errorf("expected\n\n%s\ngot\n\n%s", expected, d.String(FormatSquare))
 		}
 	})
 }

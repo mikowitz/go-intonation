@@ -87,7 +87,7 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 }
 
 func (r Ratio) Dyad() []float64 {
-	return []float64{MiddleC, MiddleC * r.Float()}
+	return []float64{MiddleCFrequency, MiddleCFrequency * r.Float()}
 }
 
 func gcd(a, b uint) uint {

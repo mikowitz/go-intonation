@@ -9,8 +9,8 @@ type Diamond [][]Ratio
 type DiamondStringFormat string
 
 var (
-	formatDiamond DiamondStringFormat = "diamond"
-	formatSquare  DiamondStringFormat = "square"
+	FormatDiamond DiamondStringFormat = "diamond"
+	FormatSquare  DiamondStringFormat = "square"
 )
 
 func NewDiamond(limits ...uint) Diamond {
@@ -28,7 +28,7 @@ func NewDiamond(limits ...uint) Diamond {
 }
 
 func (d Diamond) String(format DiamondStringFormat) string {
-	if format == formatSquare {
+	if format == FormatSquare {
 		return d.asSquareString()
 	}
 	return d.asDiamondString()

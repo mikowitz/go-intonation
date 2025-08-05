@@ -100,5 +100,5 @@ func (i Interval) Dyad() []float64 {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
-	return []float64{MiddleC, MiddleC * intervalRatio}
+	return []float64{MiddleCFrequency, MiddleCFrequency * intervalRatio}
 }
