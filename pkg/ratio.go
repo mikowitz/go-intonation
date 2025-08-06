@@ -1,43 +1,48 @@
 package intonation
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 )
 
-var ErrInvalidRatio = errors.New("invalid ratio format")
+type (
+	Numer = uint
+	Denom = uint
+)
 
 type Ratio struct {
-	Numer, Denom uint
+	Numer
+	Denom
 }
 
 func NewRatio(n, d uint) Ratio {
 	n, d = normalize(n, d)
 	g := gcd(n, d)
-	return Ratio{n / g, d / g}
+	return Ratio{Numer(n / g), Denom(d / g)}
 }
 
 func NewRatioFromString(input string) (Ratio, error) {
 	parts := strings.Split(input, "/")
 
+	error := fmt.Errorf("parsing ratio %q: %w", input, ErrInvalidRatio)
+
 	if len(parts) != 2 {
-		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
+		return Ratio{}, error
 	}
 
 	n, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
+		return Ratio{}, error
 	}
 	d, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
+		return Ratio{}, error
 	}
 
 	if n < 0 || d <= 0 {
-		return Ratio{}, fmt.Errorf("%s %q", ErrInvalidRatio, input)
+		return Ratio{}, error
 	}
 
 	return NewRatio(uint(n), uint(d)), nil
@@ -56,8 +61,8 @@ func (r Ratio) Mul(rhs Ratio) Ratio {
 }
 
 func (r Ratio) Pow(base int) Ratio {
-	var n uint = 1
-	var d uint = 1
+	var n Numer = 1
+	var d Denom = 1
 
 	for range base {
 		n *= r.Numer
@@ -71,7 +76,7 @@ func (r Ratio) Approximate12EDOInterval() ApproximateEDOInterval {
 	return r.ApproximateEDOInterval(12)
 }
 
-func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
+func (r Ratio) ApproximateEDOInterval(edo EDO) ApproximateEDOInterval {
 	f := r.Float()
 
 	edoStepCents := 1200.0 / float64(edo)
@@ -81,7 +86,7 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	etCents := math.Round(jiCents/edoStepCents) * edoStepCents
 
 	return ApproximateEDOInterval{
-		Interval{uint(etCents/edoStepCents) % edo, edo},
+		Interval{Steps(uint(etCents/edoStepCents) % uint(edo)), edo},
 		jiCents - etCents,
 	}
 }

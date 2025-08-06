@@ -22,11 +22,17 @@ var (
 	MajorSeventh    TwelveEDOInterval = Interval{11, 12}
 )
 
+type (
+	Steps uint
+	EDO   uint
+)
+
 type Interval struct {
-	steps, edo uint
+	steps Steps
+	edo   EDO
 }
 
-func NewInterval(steps, edo uint) Interval {
+func NewInterval(steps Steps, edo EDO) Interval {
 	return Interval{steps, edo}
 }
 
@@ -84,14 +90,14 @@ func (i Interval) Approximate12EDOInterval() ApproximateEDOInterval {
 	return i.ApproximateEDOInterval(12)
 }
 
-func (i Interval) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
+func (i Interval) ApproximateEDOInterval(edo EDO) ApproximateEDOInterval {
 	sourceCents := i.Cents()
 
 	targetStepCents := 1200.0 / float64(edo)
 	targetCents := math.Round(sourceCents/targetStepCents) * targetStepCents
 
 	return ApproximateEDOInterval{
-		Interval{uint(targetCents / targetStepCents), edo},
+		Interval{Steps(targetCents / targetStepCents), edo},
 		sourceCents - targetCents,
 	}
 }

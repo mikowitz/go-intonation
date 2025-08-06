@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -115,15 +114,9 @@ var latticeLookupCmd = &cobra.Command{
 			decoder := gob.NewDecoder(file)
 			decoder.Decode(&lattice)
 			file.Close()
-			if len(latticeIndices) > len(lattice) {
-				return errors.New("more indices than dimensions to index into")
-			}
 
 		} else {
 			latticeRatios := strings.Split(args[0], ",")
-			if len(latticeIndices) > len(latticeRatios) {
-				return errors.New("more indices than dimensions to index into")
-			}
 
 			ratios, err := parseRatios(latticeRatios)
 			if err != nil {

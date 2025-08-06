@@ -38,7 +38,7 @@ func TestApproximateEDOIntervalFromInterval(t *testing.T) {
 	type testCase struct {
 		description      string
 		interval         Interval
-		edo              uint
+		edo              EDO
 		expectedInterval Interval
 		expectedCents    float64
 	}
@@ -70,7 +70,7 @@ func TestApproximate12EDOIntervalFromInterval(t *testing.T) {
 	type testCase struct {
 		description   string
 		interval      Interval
-		expectedSteps uint
+		expectedSteps Steps
 		expectedCents float64
 	}
 

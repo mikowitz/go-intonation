@@ -72,7 +72,7 @@ func TestApproximateEDOInterval(t *testing.T) {
 	type testCase struct {
 		description      string
 		ratio            Ratio
-		edo              uint
+		edo              EDO
 		expectedInterval Interval
 		expectedCents    float64
 	}
@@ -161,12 +161,12 @@ func TestRatioFromString(t *testing.T) {
 			actual, err := NewRatioFromString(tc.input)
 
 			if tc.error {
-				expectedErr := fmt.Errorf("%s %q", ErrInvalidRatio, tc.input)
+				expectedErr := fmt.Errorf("parsing ratio %q: %s", tc.input, ErrInvalidRatio)
 				if expectedErr.Error() != err.Error() {
 					t.Errorf("expected error %s, got %s", expectedErr, err)
 				}
-				if err.Error() != fmt.Sprintf("invalid ratio format %q", tc.input) {
-					t.Errorf("expected `invalid ratio format %q`, got `%s`", tc.input, err.Error())
+				if err.Error() != fmt.Sprintf("parsing ratio %q: invalid ratio format", tc.input) {
+					t.Errorf("expected `parsing ratio %q: invalid ratio format`, got `%s`", tc.input, err.Error())
 				}
 				return
 			}
