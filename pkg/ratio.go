@@ -11,7 +11,7 @@ import (
 var ErrInvalidRatio = errors.New("invalid ratio format")
 
 type Ratio struct {
-	numer, denom uint
+	Numer, Denom uint
 }
 
 func NewRatio(n, d uint) Ratio {
@@ -44,15 +44,15 @@ func NewRatioFromString(input string) (Ratio, error) {
 }
 
 func (r Ratio) String() string {
-	return fmt.Sprintf("%d/%d", r.numer, r.denom)
+	return fmt.Sprintf("%d/%d", r.Numer, r.Denom)
 }
 
 func (r Ratio) Float() float64 {
-	return float64(r.numer) / float64(r.denom)
+	return float64(r.Numer) / float64(r.Denom)
 }
 
 func (r Ratio) Mul(rhs Ratio) Ratio {
-	return NewRatio(r.numer*rhs.numer, r.denom*rhs.denom)
+	return NewRatio(r.Numer*rhs.Numer, r.Denom*rhs.Denom)
 }
 
 func (r Ratio) Pow(base int) Ratio {
@@ -60,8 +60,8 @@ func (r Ratio) Pow(base int) Ratio {
 	var d uint = 1
 
 	for range base {
-		n *= r.numer
-		d *= r.denom
+		n *= r.Numer
+		d *= r.Denom
 	}
 
 	return NewRatio(n, d)

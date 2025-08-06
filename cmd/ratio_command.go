@@ -51,7 +51,6 @@ func init() {
 	ratioCmd.Flags().BoolVarP(&ratioCompare, "compare", "c", false, "play the nearest 12-EDO interval as a comparison")
 	ratioCmd.Flags().BoolVarP(&ratioInterval, "interval", "i", false, "play the ratio as a split dyad before playing it as a chord")
 	ratioCmd.Flags().BoolVarP(&ratioQuiet, "quiet", "q", false, "compare ratio with no audio output")
-	ratioCmd.MarkFlagRequired("ratio")
 
 	ratioCmd.MarkFlagsMutuallyExclusive("play", "quiet")
 }
