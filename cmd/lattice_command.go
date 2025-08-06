@@ -1,61 +1,165 @@
 package cmd
 
 import (
-	"flag"
+	"encoding/gob"
 	"fmt"
-	"log"
 	"os"
-	"strconv"
+	"path"
 	"strings"
 
 	intonation "github.com/mikowitz/intonation/pkg"
+	"github.com/spf13/cobra"
 )
 
-// `
-// cmd lattice new 3/2,5/4,7/4 --name=trio
-// cmd lattice get 1,1,1 --name=trio
-// `
+var (
+	latticeIndices  []int
+	latticeSaveName string
+)
 
-var indicesStr string
-
-func LatticeCommand() {
-	latticeCmd := flag.NewFlagSet("lattice", flag.ExitOnError)
-	latticeCmd.StringVar(&indicesStr, "indices", "", "the indices used to access the lattice")
-
-	if len(os.Args) < 4 {
-		fmt.Println("  ratios\n        the ratios used to construct the lattice")
-		latticeCmd.PrintDefaults()
-		os.Exit(1)
-	}
-
-	ratiosStr := os.Args[2]
-	latticeCmd.Parse(os.Args[3:])
-
-	ratios := []intonation.Ratio{}
-	for _, r := range strings.Split(ratiosStr, ",") {
-		ratio, err := intonation.NewRatioFromString(r)
+var latticeListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List saved lattices",
+	Long:  `Return a list of saved lattices`,
+	Args:  cobra.ExactArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := os.UserConfigDir()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		ratios = append(ratios, ratio)
-	}
+		latticePath := path.Join(cfg, "go-intonation", "lattices")
 
-	lattice := intonation.NewLattice(ratios...)
+		items, _ := os.ReadDir(latticePath)
+		for _, item := range items {
+			filePath := path.Join(latticePath, item.Name())
+			file, err := os.Open(filePath)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			decoder := gob.NewDecoder(file)
+			l := intonation.Lattice{}
+			decoder.Decode(&l)
 
-	indices := []int{}
-	for _, i := range strings.Split(indicesStr, ",") {
-		index, err := strconv.Atoi(i)
+			fmt.Printf("%s\t\t%s\n", item.Name(), l)
+		}
+
+		return nil
+	},
+}
+
+var latticeSaveCmd = &cobra.Command{
+	Use:   "save <ratios>",
+	Short: "Construct and store a lattice for future reference",
+	Long:  `Construct a just intonation lattice from comma-separated ratios and persist it for future reference`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := os.UserConfigDir()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		indices = append(indices, index)
+		latticePath := path.Join(cfg, "go-intonation", "lattices")
+		if err = os.MkdirAll(latticePath, 0755); err != nil {
+			return err
+		}
 
-	}
+		var fileName string
+		if latticeSaveName == "" {
+			fileName = args[0]
+		} else {
+			fileName = latticeSaveName
+		}
+		fileName = strings.ReplaceAll(fileName, "/", "-")
 
-	ratio, err := lattice.At(indices...)
-	if err != nil {
-		log.Fatal(err)
+		filePath := path.Join(latticePath, fileName)
+		file, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		latticeRatios := strings.Split(args[0], ",")
+		ratios, err := parseRatios(latticeRatios)
+		if err != nil {
+			return err
+		}
+		lattice := intonation.NewLattice(ratios...)
+		encoder := gob.NewEncoder(file)
+
+		err = encoder.Encode(lattice)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var latticeLookupCmd = &cobra.Command{
+	Use:   "lookup <ratios or name>",
+	Short: "Construct a just intonation lattice, or read a saved one, and index into it",
+	Long:  `Construct a just intonation lattice from comma-separated ratios, or read a lattice saved via "lattice save", and index into it using comma-separated indices.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+		latticePath := path.Join(cfg, "go-intonation", "lattices")
+
+		filePath := path.Join(latticePath, strings.ReplaceAll(args[0], "/", "-"))
+		file, err := os.Open(filePath)
+
+		var lattice intonation.Lattice
+
+		if err == nil {
+			decoder := gob.NewDecoder(file)
+			decoder.Decode(&lattice)
+			file.Close()
+
+		} else {
+			latticeRatios := strings.Split(args[0], ",")
+
+			ratios, err := parseRatios(latticeRatios)
+			if err != nil {
+				return err
+			}
+			lattice = intonation.NewLattice(ratios...)
+		}
+
+		ratio, err := lattice.At(latticeIndices...)
+		if err != nil {
+			return err
+		}
+		interval := ratio.Approximate12EDOInterval()
+		fmt.Println(ratio, "\t", interval)
+		return nil
+	},
+}
+
+func parseRatios(input []string) ([]intonation.Ratio, error) {
+	output := []intonation.Ratio{}
+	for _, i := range input {
+		n, err := intonation.NewRatioFromString(i)
+		if err != nil {
+			return output, err
+		}
+		output = append(output, n)
 	}
-	interval := ratio.Approximate12EDOInterval()
-	fmt.Println(ratio, "\t", interval)
+	return output, nil
+}
+
+var latticeCmd = &cobra.Command{
+	Use:   "lattice",
+	Short: "Actions performed with JI ratio lattices",
+	Long:  `Actions for working with just intontation ratio lattices`,
+}
+
+func init() {
+	latticeLookupCmd.Flags().IntSliceVarP(&latticeIndices, "indices", "i", []int{}, "the indices used to access the lattice (required)")
+	latticeLookupCmd.MarkFlagRequired("indices")
+	latticeCmd.AddCommand(latticeLookupCmd)
+
+	latticeSaveCmd.Flags().StringVarP(&latticeSaveName, "name", "n", "", "the name under which to save the lattice (defaults to a random, readable string otherwise)")
+	latticeCmd.AddCommand(latticeSaveCmd)
+
+	latticeCmd.AddCommand(latticeListCmd)
 }

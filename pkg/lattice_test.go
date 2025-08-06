@@ -1,6 +1,9 @@
 package intonation
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestNewLattice(t *testing.T) {
 	l := NewLattice(
@@ -41,9 +44,10 @@ func TestLatticeAt(t *testing.T) {
 	t.Run("errors if too many dimensions are passed", func(t *testing.T) {
 		l := NewLattice(NewRatio(3, 2), NewRatio(5, 4))
 
+		expectedErr := fmt.Errorf("accessing lattice: %w", ErrLatticeDimensions)
 		_, err := l.At(1, 2, 3)
 
-		if err != ErrLatticeDimensions {
+		if err.Error() != expectedErr.Error() {
 			t.Errorf("expected ErrLatticeDimensions, got %q", err)
 		}
 	})

@@ -1,41 +1,39 @@
 package cmd
 
 import (
-	"flag"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"strings"
 
 	intonation "github.com/mikowitz/intonation/pkg"
+	"github.com/spf13/cobra"
 )
 
-var format string
+var diamondFormat string
 
-func DiamondCommand() {
-	diamondCmd := flag.NewFlagSet("diamond", flag.ExitOnError)
-	diamondCmd.StringVar(&format, "format", "diamond", "printing format for the diamond: diamond or square")
-
-	if len(os.Args) < 3 {
-		fmt.Println("  limits\n        the limits used to construct the diamond")
-		diamondCmd.PrintDefaults()
-		os.Exit(1)
-	}
-
-	diamondCmd.Parse(os.Args[3:])
-
-	limits := []uint{}
-
-	for _, l := range strings.Split(os.Args[2], ",") {
-		d, err := strconv.Atoi(l)
-		if err != nil {
-			log.Fatalf("Could not convert `%s` to an int", l)
+var diamondCmd = &cobra.Command{
+	Use:   "diamond <limits>",
+	Short: "Create a otonality/utonality diamond from the provided limits",
+	Long:  `Create a otonality/utonality diamond from the provided limits. Limits should be comma-separated integers.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		limits := []uint{}
+		limitStrs := strings.Split(args[0], ",")
+		for _, ls := range limitStrs {
+			l, err := strconv.Atoi(ls)
+			if err != nil {
+				return err
+			}
+			limits = append(limits, uint(l))
 		}
-		limits = append(limits, uint(d))
-	}
 
-	d := intonation.NewDiamond(limits...)
+		d := intonation.NewDiamond(limits...)
 
-	fmt.Println(d.String(intonation.DiamondStringFormat(format)))
+		fmt.Println(d.String(intonation.DiamondStringFormat(diamondFormat)))
+		return nil
+	},
+}
+
+func init() {
+	diamondCmd.Flags().StringVarP(&diamondFormat, "format", "f", "diamond", "printing format for the diamond: diamond or square")
 }

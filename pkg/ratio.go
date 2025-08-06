@@ -5,66 +5,68 @@ import (
 	"math"
 	"strconv"
 	"strings"
-
-	"github.com/mikowitz/intonation/internal"
 )
 
-type RatioParseError struct {
-	input string
-}
-
-func (e *RatioParseError) Error() string {
-	return fmt.Sprintf("could not parse ratio %s", e.input)
-}
+type (
+	Numer = uint
+	Denom = uint
+)
 
 type Ratio struct {
-	numer, denom uint
+	Numer
+	Denom
 }
 
 func NewRatio(n, d uint) Ratio {
 	n, d = normalize(n, d)
 	g := gcd(n, d)
-	return Ratio{n / g, d / g}
+	return Ratio{Numer(n / g), Denom(d / g)}
 }
 
 func NewRatioFromString(input string) (Ratio, error) {
 	parts := strings.Split(input, "/")
 
+	error := fmt.Errorf("parsing ratio %q: %w", input, ErrInvalidRatio)
+
+	if len(parts) != 2 {
+		return Ratio{}, error
+	}
+
 	n, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, error
 	}
 	d, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, error
 	}
 
 	if n < 0 || d <= 0 {
-		return Ratio{}, &RatioParseError{input}
+		return Ratio{}, error
 	}
 
 	return NewRatio(uint(n), uint(d)), nil
 }
 
 func (r Ratio) String() string {
-	return fmt.Sprintf("%d/%d", r.numer, r.denom)
+	return fmt.Sprintf("%d/%d", r.Numer, r.Denom)
 }
 
 func (r Ratio) Float() float64 {
-	return float64(r.numer) / float64(r.denom)
+	return float64(r.Numer) / float64(r.Denom)
 }
 
 func (r Ratio) Mul(rhs Ratio) Ratio {
-	return NewRatio(r.numer*rhs.numer, r.denom*rhs.denom)
+	return NewRatio(r.Numer*rhs.Numer, r.Denom*rhs.Denom)
 }
 
 func (r Ratio) Pow(base int) Ratio {
-	var n uint = 1
-	var d uint = 1
+	var n Numer = 1
+	var d Denom = 1
 
 	for range base {
-		n *= r.numer
-		d *= r.denom
+		n *= r.Numer
+		d *= r.Denom
 	}
 
 	return NewRatio(n, d)
@@ -74,7 +76,7 @@ func (r Ratio) Approximate12EDOInterval() ApproximateEDOInterval {
 	return r.ApproximateEDOInterval(12)
 }
 
-func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
+func (r Ratio) ApproximateEDOInterval(edo EDO) ApproximateEDOInterval {
 	f := r.Float()
 
 	edoStepCents := 1200.0 / float64(edo)
@@ -84,25 +86,13 @@ func (r Ratio) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
 	etCents := math.Round(jiCents/edoStepCents) * edoStepCents
 
 	return ApproximateEDOInterval{
-		Interval{uint(etCents/edoStepCents) % edo, edo},
+		Interval{Steps(uint(etCents/edoStepCents) % uint(edo)), edo},
 		jiCents - etCents,
 	}
 }
 
-func (r Ratio) dyad() internal.Dyad {
-	return internal.Dyad{256.0, 256.0 * r.Float()}
-}
-
-func (r Ratio) PlayInterval() {
-	r.dyad().PlayInterval()
-}
-
-func (r Ratio) PlayChord() {
-	r.dyad().PlayChord()
-}
-
-func (r Ratio) Play() {
-	r.dyad().Play()
+func (r Ratio) Dyad() []float64 {
+	return []float64{MiddleCFrequency, MiddleCFrequency * r.Float()}
 }
 
 func gcd(a, b uint) uint {

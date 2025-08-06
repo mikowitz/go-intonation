@@ -1,10 +1,8 @@
 package intonation
 
-import "errors"
+import "fmt"
 
 type Lattice []Ratio
-
-var ErrLatticeDimensions = errors.New("too many access indices passed")
 
 func NewLattice(ratios ...Ratio) Lattice {
 	l := Lattice{}
@@ -16,7 +14,7 @@ func NewLattice(ratios ...Ratio) Lattice {
 
 func (l Lattice) At(access ...int) (Ratio, error) {
 	if len(access) > len(l) {
-		return Ratio{}, ErrLatticeDimensions
+		return Ratio{}, fmt.Errorf("accessing lattice: %w", ErrLatticeDimensions)
 	}
 
 	r := NewRatio(1, 1)

@@ -1,7 +1,10 @@
 package intonation
 
 import (
+	"context"
+	"errors"
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -35,7 +38,7 @@ func TestApproximateEDOIntervalFromInterval(t *testing.T) {
 	type testCase struct {
 		description      string
 		interval         Interval
-		edo              uint
+		edo              EDO
 		expectedInterval Interval
 		expectedCents    float64
 	}
@@ -67,7 +70,7 @@ func TestApproximate12EDOIntervalFromInterval(t *testing.T) {
 	type testCase struct {
 		description   string
 		interval      Interval
-		expectedSteps uint
+		expectedSteps Steps
 		expectedCents float64
 	}
 
@@ -114,8 +117,9 @@ func TestPrinting12EDOIntervals(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.interval.String() != tc.name {
-				t.Errorf("Expected %s, got %s", tc.name, tc.interval.String())
+			actual := tc.interval.String()
+			if actual != tc.name {
+				t.Errorf("Expected %s, got %s", tc.name, actual)
 			}
 		})
 	}
@@ -133,9 +137,85 @@ func TestPrintingIntervals(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.interval.String() != tc.name {
-				t.Errorf("Expected %s, got %s", tc.name, tc.interval.String())
+			actual := tc.interval.String()
+			if actual != tc.name {
+				t.Errorf("Expected %s, got %s", tc.name, actual)
 			}
 		})
 	}
+}
+
+func TestIntervalPlay(t *testing.T) {
+	i := PerfectFourth
+	output := &TestAudioOutput{}
+
+	Play(i, context.Background(), output)
+
+	if len(output.output) != 4 {
+		t.Errorf("expected 4 tones played, got %d", len(output.output))
+	}
+	expected := []TestAudioOutputRecord{
+		{f: 256.0, chord: false},
+		{f: 341.7190026675288, chord: false},
+		{f: 256.0, chord: true},
+		{f: 341.7190026675288, chord: true},
+	}
+	if !reflect.DeepEqual(expected, output.output) {
+		t.Errorf("expected\n%v\ngot\n%v", expected, output.output)
+	}
+}
+
+func TestIntervalPlayError(t *testing.T) {
+	i := MajorSecond
+	output := IntervalErroringOutput{}
+	expected := errors.New("couldn't play tone")
+	t.Run("play interval", func(t *testing.T) {
+		err := PlayInterval(i, context.Background(), output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+
+	t.Run("play chord", func(t *testing.T) {
+		err := PlayChord(i, context.Background(), output)
+		if err != nil {
+			t.Errorf("expected no error, got %s", err)
+		}
+	})
+
+	t.Run("play", func(t *testing.T) {
+		err := Play(i, context.Background(), output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+}
+
+func TestIntervalPlayErrorWithChord(t *testing.T) {
+	i := MinorSixth
+	output := ChordErroringOutput{}
+	expected := errors.New("couldn't play chord")
+	t.Run("play interval", func(t *testing.T) {
+		err := PlayInterval(i, context.Background(), output)
+		if err != nil {
+			t.Errorf("expected no error, got %s", err)
+		}
+	})
+
+	t.Run("play chord", func(t *testing.T) {
+		err := PlayChord(i, context.Background(), output)
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
+
+	t.Run("play", func(t *testing.T) {
+		err := Play(i, context.Background(), output)
+
+		if expected.Error() != err.Error() {
+			t.Errorf("expected %s, got %s", expected, err)
+		}
+	})
 }

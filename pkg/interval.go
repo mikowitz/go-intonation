@@ -2,10 +2,7 @@ package intonation
 
 import (
 	"fmt"
-	"log"
 	"math"
-
-	"github.com/mikowitz/intonation/internal"
 )
 
 type TwelveEDOInterval = Interval
@@ -25,55 +22,63 @@ var (
 	MajorSeventh    TwelveEDOInterval = Interval{11, 12}
 )
 
+type (
+	Steps uint
+	EDO   uint
+)
+
 type Interval struct {
-	steps, edo uint
+	steps Steps
+	edo   EDO
 }
 
-func NewInterval(steps, edo uint) Interval {
+func NewInterval(steps Steps, edo EDO) Interval {
 	return Interval{steps, edo}
 }
 
 func (i Interval) String() string {
 	if i.edo == 12 {
-		return i.twelveEDOIntervalString()
+		s, err := i.twelveEDOIntervalString()
+		if err != nil {
+			return err.Error()
+		}
+		return s
 	}
 	noun := "steps"
 	if i.steps == 1 {
 		noun = "step"
 	}
-
 	return fmt.Sprintf("%d-EDO %d %s", i.edo, i.steps, noun)
 }
 
-func (i Interval) twelveEDOIntervalString() string {
+func (i Interval) twelveEDOIntervalString() (string, error) {
 	switch i {
 	case Unison:
-		return "Unison"
+		return "Unison", nil
 	case MinorSecond:
-		return "Minor Second"
+		return "Minor Second", nil
 	case MajorSecond:
-		return "Major Second"
+		return "Major Second", nil
 	case MinorThird:
-		return "Minor Third"
+		return "Minor Third", nil
 	case MajorThird:
-		return "Major Third"
+		return "Major Third", nil
 	case PerfectFourth:
-		return "Perfect Fourth"
+		return "Perfect Fourth", nil
 	case AugmentedFourth:
-		return "Augmented Fourth"
+		return "Augmented Fourth", nil
 	case PerfectFifth:
-		return "Perfect Fifth"
+		return "Perfect Fifth", nil
 	case MinorSixth:
-		return "Minor Sixth"
+		return "Minor Sixth", nil
 	case MajorSixth:
-		return "Major Sixth"
+		return "Major Sixth", nil
 	case MinorSeventh:
-		return "Minor Seventh"
+		return "Minor Seventh", nil
 	case MajorSeventh:
-		return "Major Seventh"
+		return "Major Seventh", nil
 	default:
-		log.Fatalf("Tried to call twelveEDOIntervalString on %q", i)
-		return ""
+		return "", fmt.Errorf("invalid 12-EDO interval: %v", i)
 	}
 }
 
@@ -85,33 +90,21 @@ func (i Interval) Approximate12EDOInterval() ApproximateEDOInterval {
 	return i.ApproximateEDOInterval(12)
 }
 
-func (i Interval) ApproximateEDOInterval(edo uint) ApproximateEDOInterval {
+func (i Interval) ApproximateEDOInterval(edo EDO) ApproximateEDOInterval {
 	sourceCents := i.Cents()
 
 	targetStepCents := 1200.0 / float64(edo)
 	targetCents := math.Round(sourceCents/targetStepCents) * targetStepCents
 
 	return ApproximateEDOInterval{
-		Interval{uint(targetCents / targetStepCents), edo},
+		Interval{Steps(targetCents / targetStepCents), edo},
 		sourceCents - targetCents,
 	}
 }
 
-func (i Interval) dyad() internal.Dyad {
+func (i Interval) Dyad() []float64 {
 	stepRatio := math.Pow(2, 1.0/float64(i.edo))
 	intervalRatio := math.Pow(stepRatio, float64(i.steps))
 
-	return internal.Dyad{256.0, 256.0 * intervalRatio}
-}
-
-func (i Interval) PlayInterval() {
-	i.dyad().PlayInterval()
-}
-
-func (i Interval) PlayChord() {
-	i.dyad().PlayChord()
-}
-
-func (i Interval) Play() {
-	i.dyad().Play()
+	return []float64{MiddleCFrequency, MiddleCFrequency * intervalRatio}
 }
