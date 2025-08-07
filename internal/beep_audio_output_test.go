@@ -9,7 +9,7 @@ import (
 )
 
 func TestBeepAudioOutputContextCancellation(t *testing.T) {
-	output := BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
+	output := &BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
 	
 	t.Run("PlayTone cancellation", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
