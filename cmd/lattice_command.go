@@ -14,6 +14,8 @@ import (
 var (
 	latticeIndices  []int
 	latticeSaveName string
+
+	latticePath string
 )
 
 var latticeListCmd = &cobra.Command{
@@ -22,13 +24,10 @@ var latticeListCmd = &cobra.Command{
 	Long:  `Return a list of saved lattices`,
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := os.UserConfigDir()
+		items, err := os.ReadDir(latticePath)
 		if err != nil {
 			return err
 		}
-		latticePath := path.Join(cfg, "go-intonation", "lattices")
-
-		items, _ := os.ReadDir(latticePath)
 		for _, item := range items {
 			filePath := path.Join(latticePath, item.Name())
 			file, err := os.Open(filePath)
@@ -53,12 +52,7 @@ var latticeSaveCmd = &cobra.Command{
 	Long:  `Construct a just intonation lattice from comma-separated ratios and persist it for future reference`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := os.UserConfigDir()
-		if err != nil {
-			return err
-		}
-		latticePath := path.Join(cfg, "go-intonation", "lattices")
-		if err = os.MkdirAll(latticePath, 0755); err != nil {
+		if err := os.MkdirAll(latticePath, 0755); err != nil {
 			return err
 		}
 
@@ -99,12 +93,6 @@ var latticeLookupCmd = &cobra.Command{
 	Long:  `Construct a just intonation lattice from comma-separated ratios, or read a lattice saved via "lattice save", and index into it using comma-separated indices.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := os.UserConfigDir()
-		if err != nil {
-			return err
-		}
-		latticePath := path.Join(cfg, "go-intonation", "lattices")
-
 		filePath := path.Join(latticePath, strings.ReplaceAll(args[0], "/", "-"))
 		file, err := os.Open(filePath)
 
@@ -162,4 +150,6 @@ func init() {
 	latticeCmd.AddCommand(latticeSaveCmd)
 
 	latticeCmd.AddCommand(latticeListCmd)
+	cfg, _ := os.UserConfigDir()
+	latticePath = path.Join(cfg, "go-intonation", "lattices")
 }

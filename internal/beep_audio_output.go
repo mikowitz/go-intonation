@@ -33,11 +33,6 @@ func (output *BeepAudioOutput) PlayChord(ctx context.Context, frequencies []floa
 	}
 
 	chord := beep.Take(output.SampleRate.N(duration), beep.Mix(chordTones...))
-	chord = &effects.Volume{
-		Streamer: chord,
-		Base:     2,
-		Volume:   -3,
-	}
 
 	return output.playWithContext(ctx, chord)
 }
@@ -49,13 +44,15 @@ func (output *BeepAudioOutput) PlayTone(ctx context.Context, frequency float64, 
 	}
 
 	tone = beep.Take(output.SampleRate.N(duration), tone)
-	tone = &effects.Volume{
-		Streamer: tone,
+	return output.playWithContext(ctx, tone)
+}
+
+func applyVolumeEffect(streamer beep.Streamer) beep.Streamer {
+	return &effects.Volume{
+		Streamer: streamer,
 		Base:     2,
 		Volume:   -3,
 	}
-
-	return output.playWithContext(ctx, tone)
 }
 
 func (output *BeepAudioOutput) playWithContext(ctx context.Context, streamer beep.Streamer) error {
@@ -63,7 +60,7 @@ func (output *BeepAudioOutput) playWithContext(ctx context.Context, streamer bee
 	done := make(chan bool, 1)
 
 	speaker.Play(beep.Seq(
-		streamer,
+		applyVolumeEffect(streamer),
 		beep.Callback(func() {
 			done <- true
 		}),
