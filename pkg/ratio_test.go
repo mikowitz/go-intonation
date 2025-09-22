@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/gopxl/beep/v2"
 )
 
 func TestNewRatio(t *testing.T) {
@@ -179,8 +181,10 @@ func TestRatioFromString(t *testing.T) {
 }
 
 type TestAudioOutputRecord struct {
-	f     float64
-	chord bool
+	f      float64
+	chord  bool
+	stream bool
+	pause  bool
 }
 
 type TestAudioOutput struct {
@@ -189,14 +193,25 @@ type TestAudioOutput struct {
 
 func (output *TestAudioOutput) PlayChord(ctx context.Context, frequencies []float64, duration time.Duration) error {
 	for _, f := range frequencies {
-		output.output = append(output.output, TestAudioOutputRecord{f, true})
+		output.output = append(output.output, TestAudioOutputRecord{f: f, chord: true})
 	}
 	return nil
 }
 
 func (output *TestAudioOutput) PlayTone(ctx context.Context, frequency float64, duration time.Duration) error {
-	output.output = append(output.output, TestAudioOutputRecord{frequency, false})
+	output.output = append(output.output, TestAudioOutputRecord{f: frequency, chord: false})
 	return nil
+}
+
+func (output *TestAudioOutput) StreamChord(ctx context.Context, frequencies []float64) (*beep.Ctrl, error) {
+	for _, f := range frequencies {
+		output.output = append(output.output, TestAudioOutputRecord{f: f, stream: true})
+	}
+	return nil, nil
+}
+
+func (output *TestAudioOutput) PauseStream(ctx context.Context, stream *beep.Ctrl) {
+	output.output = append(output.output, TestAudioOutputRecord{f: 0, pause: true})
 }
 
 func TestRatioPlayInterval(t *testing.T) {
@@ -265,6 +280,13 @@ func (output IntervalErroringOutput) PlayChord(ctx context.Context, frequencies 
 	return nil
 }
 
+func (output IntervalErroringOutput) StreamChord(ctx context.Context, frequences []float64) (*beep.Ctrl, error) {
+	return nil, nil
+}
+
+func (output IntervalErroringOutput) PauseStream(ctx context.Context, stream *beep.Ctrl) {
+}
+
 func TestRatioPlayError(t *testing.T) {
 	r := NewRatio(3, 2)
 	output := IntervalErroringOutput{}
@@ -301,6 +323,13 @@ func (output ChordErroringOutput) PlayTone(ctx context.Context, frequency float6
 
 func (output ChordErroringOutput) PlayChord(ctx context.Context, frequencies []float64, duration time.Duration) error {
 	return errors.New("couldn't play chord")
+}
+
+func (output ChordErroringOutput) StreamChord(ctx context.Context, frequences []float64) (*beep.Ctrl, error) {
+	return nil, nil
+}
+
+func (output ChordErroringOutput) PauseStream(ctx context.Context, stream *beep.Ctrl) {
 }
 
 func TestRatioPlayErrorWithChord(t *testing.T) {

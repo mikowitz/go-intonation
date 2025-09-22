@@ -16,32 +16,62 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type streamer struct {
+	playable    intonation.Playable
+	stream      *beep.Ctrl
+	isStreaming bool
+}
+
+func (s *streamer) Stream(output audio.AudioOutput) {
+	s.isStreaming = true
+	stream, err := intonation.StreamChord(s.playable, context.TODO(), output)
+	if err != nil {
+		log.Printf("error streaming: %s (%v)", s.playable, err)
+	}
+	s.stream = stream
+}
+
+func (s *streamer) Pause(output audio.AudioOutput) {
+	if s.stream == nil {
+		return
+	}
+	s.isStreaming = false
+	intonation.PauseStream(s.stream, context.TODO(), output)
+}
+
+func (s *streamer) Clear() {
+	s.isStreaming = false
+	if s.stream != nil {
+		s.stream.Streamer = nil
+	}
+}
+
 type model struct {
-	input               textinput.Model
-	ratio               intonation.Ratio
-	edo                 intonation.TwelveEDOInterval
-	output              audio.AudioOutput
-	playing             bool
-	playingEDO          bool
-	currentlyPlaying    intonation.Ratio
-	ratioStream         *beep.Ctrl
-	currentlyPlayingEDO intonation.TwelveEDOInterval
-	edoStream           *beep.Ctrl
-	err                 error
+	input  textinput.Model
+	ratio  intonation.Ratio
+	edo    intonation.TwelveEDOInterval
+	output audio.AudioOutput
+	err    error
+
+	ratioStreamer *streamer
+	edoStreamer   *streamer
 }
 
 func initialModel() model {
-	output := internal.BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
 	ti := textinput.New()
 	ti.Placeholder = "1/1"
 	ti.Focus()
 	ti.CharLimit = 11
 	ti.Width = 20
 
+	output := internal.BeepAudioOutput{SampleRate: beep.SampleRate(48000)}
+
 	return model{
-		input:  ti,
-		ratio:  intonation.NewRatio(1, 1),
-		output: output,
+		input:         ti,
+		ratio:         intonation.NewRatio(1, 1),
+		output:        output,
+		ratioStreamer: &streamer{},
+		edoStreamer:   &streamer{},
 	}
 }
 
@@ -66,30 +96,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input, cmd = m.input.Update(msg)
 			m.SetRatio()
 		case "p":
-			log.Printf("m.playing? %t", m.playing)
-			if !m.playing {
-				m.playing = true
+			if !m.ratioStreamer.isStreaming {
 				m.PlayRatio()
 			} else {
-				m.playing = false
 				m.PauseRatio()
-				m.playingEDO = false
-				m.PauseEDO()
 			}
 		case "P":
-			log.Printf("m.playingEDO? %t", m.playingEDO)
-			if !m.playingEDO {
-				m.playingEDO = true
+			if !m.edoStreamer.isStreaming {
 				m.PlayEDO()
 			} else {
-				m.playingEDO = false
 				m.PauseEDO()
 			}
 		case "enter":
 			m.SetRatio()
 			m.ClearRatioStreamer()
-			m.playingEDO = false
-			m.CLearEDOStreamer()
+			m.ClearEDOStreamer()
 			m.PlayRatio()
 			m.input.CursorEnd()
 		}
@@ -100,9 +121,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	currentRatio := ""
 	currentEDO := ""
-	if m.playing {
-		currentRatio = m.currentlyPlaying.String()
-		currentEDO = m.currentlyPlaying.Approximate12EDOInterval().String()
+	if m.ratioStreamer.isStreaming {
+		r, _ := m.ratioStreamer.playable.(intonation.Ratio)
+		currentRatio = fmt.Sprintf("%s (%s)",
+			m.ratioStreamer.playable.String(),
+			r.Approximate12EDOInterval().String(),
+		)
+	}
+	if m.edoStreamer.isStreaming {
+		currentEDO = m.edoStreamer.playable.String()
 	}
 	return fmt.Sprintf(
 		"Enter a Just Intonation ratio (q to quit)\n\nplaying: %-10s %s\n\n%s\n\n============\n\n%-10s (%s)",
@@ -115,48 +142,42 @@ func (m model) View() string {
 }
 
 func (m *model) PlayRatio() {
-	m.playing = true
-	m.currentlyPlaying = m.ratio
-	ratioCtrl, err := intonation.StreamChord(m.currentlyPlaying, context.TODO(), m.output)
-	if err != nil {
-		log.Printf("error playing ratio: %s (%v)", m.currentlyPlaying, err)
+	m.ratioStreamer = &streamer{
+		playable:    m.ratio,
+		stream:      &beep.Ctrl{},
+		isStreaming: false,
 	}
-	m.ratioStream = ratioCtrl
+	m.ratioStreamer.Stream(m.output)
 }
 
 func (m *model) PauseRatio() {
-	if m.ratioStream != nil {
-		intonation.PauseStream(m.ratioStream, context.TODO(), m.output)
-		m.ratioStream = nil
+	if m.ratioStreamer != nil {
+		m.ratioStreamer.Pause(m.output)
 	}
 }
 
 func (m *model) ClearRatioStreamer() {
-	if m.ratioStream != nil {
-		m.ratioStream.Streamer = nil
+	if m.ratioStreamer != nil {
+		m.ratioStreamer.Clear()
 	}
 }
 
 func (m *model) PlayEDO() {
-	m.playingEDO = true
-	m.currentlyPlayingEDO = m.edo
-	edoCtrl, err := intonation.StreamChord(m.currentlyPlayingEDO, context.TODO(), m.output)
-	if err != nil {
-		log.Printf("error playing interval: %s (%v)", m.currentlyPlayingEDO, err)
+	m.edoStreamer = &streamer{
+		playable: m.edo,
 	}
-	m.edoStream = edoCtrl
+	m.edoStreamer.Stream(m.output)
 }
 
 func (m *model) PauseEDO() {
-	if m.edoStream != nil {
-		intonation.PauseStream(m.edoStream, context.TODO(), m.output)
-		m.edoStream = nil
+	if m.edoStreamer != nil {
+		m.edoStreamer.Pause(m.output)
 	}
 }
 
-func (m *model) CLearEDOStreamer() {
-	if m.edoStream != nil {
-		m.edoStream.Streamer = nil
+func (m *model) ClearEDOStreamer() {
+	if m.edoStreamer != nil {
+		m.edoStreamer.Clear()
 	}
 }
 

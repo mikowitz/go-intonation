@@ -10,6 +10,7 @@ import (
 
 type Playable interface {
 	Dyad() []float64
+	String() string
 }
 
 func PlayInterval(p Playable, ctx context.Context, output audio.AudioOutput) error {
