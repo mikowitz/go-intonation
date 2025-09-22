@@ -54,6 +54,38 @@ func (output BeepAudioOutput) PlayTone(ctx context.Context, frequency float64, d
 	return output.playWithContext(ctx, tone)
 }
 
+func (output BeepAudioOutput) StreamChord(ctx context.Context, frequencies []float64) (*beep.Ctrl, error) {
+	chordTones := []beep.Streamer{}
+	for _, f := range frequencies {
+		tone, err := generators.SineTone(output.SampleRate, f)
+		if err != nil {
+			return nil, err
+		}
+		chordTones = append(chordTones, tone)
+	}
+
+	chord := beep.Mix(chordTones...)
+	chord = &effects.Volume{
+		Streamer: chord,
+		Base:     2,
+		Volume:   -4,
+	}
+
+	// return &beep.Ctrl{Streamer: chord}, nil
+	ctrl := &beep.Ctrl{Streamer: chord}
+
+	speaker.Init(output.SampleRate, 4800)
+	speaker.Play(ctrl)
+
+	return ctrl, nil
+}
+
+func (output BeepAudioOutput) PauseStream(cxt context.Context, stream *beep.Ctrl) {
+	speaker.Lock()
+	stream.Paused = true
+	speaker.Unlock()
+}
+
 func (output BeepAudioOutput) playWithContext(ctx context.Context, streamer beep.Streamer) error {
 	speaker.Init(output.SampleRate, 4800)
 	done := make(chan bool, 1)
