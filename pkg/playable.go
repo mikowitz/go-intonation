@@ -34,10 +34,10 @@ func Play(p Playable, ctx context.Context, output audio.AudioOutput) error {
 	return PlayChord(p, ctx, output)
 }
 
-func StreamChord(p Playable, ctx context.Context, output audio.AudioOutput) (*beep.Ctrl, error) {
+func StreamChord(p Playable, ctx context.Context, output audio.AudioOutput) (*beep.Streamer, error) {
 	return output.StreamChord(ctx, p.Dyad())
 }
 
-func PauseStream(stream *beep.Ctrl, ctx context.Context, output audio.AudioOutput) {
+func PauseStream(stream *beep.Streamer, ctx context.Context, output audio.AudioOutput) {
 	output.PauseStream(ctx, stream)
 }

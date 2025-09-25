@@ -14,12 +14,37 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type streamer struct {
 	playable    intonation.Playable
-	stream      *beep.Ctrl
+	stream      *beep.Streamer
 	isStreaming bool
+	triggerKey  string
+}
+
+func (s streamer) Init() tea.Cmd {
+	return nil
+}
+
+func (s streamer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	return s, cmd
+}
+
+func (s streamer) View() string {
+	if s.playable == nil {
+		return ""
+	}
+	str := s.playable.String()
+
+	if s.isStreaming {
+		str += "\n\n(" + s.triggerKey + ")ause"
+	} else {
+		str += "\n\n(" + s.triggerKey + ")lay"
+	}
+	return str
 }
 
 func (s *streamer) Stream(output audio.AudioOutput) {
@@ -47,14 +72,16 @@ func (s *streamer) Clear() {
 }
 
 type model struct {
-	input  textinput.Model
-	ratio  intonation.Ratio
-	edo    intonation.TwelveEDOInterval
-	output audio.AudioOutput
-	err    error
+	input        textinput.Model
+	ratio        intonation.Ratio
+	edo          intonation.TwelveEDOInterval
+	output       audio.AudioOutput
+	err          error
+	muted        bool
+	mutedStreams []string
 
-	ratioStreamer *streamer
-	edoStreamer   *streamer
+	ratioStreamer streamer
+	edoStreamer   streamer
 }
 
 func initialModel() model {
@@ -76,7 +103,7 @@ func initialModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	return textinput.Blink
+	return tea.Batch(textinput.Blink, m.ratioStreamer.Init(), m.edoStreamer.Init())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -95,49 +122,91 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "down", "left", "right":
 			m.input, cmd = m.input.Update(msg)
 			m.SetRatio()
-		case "p":
-			if !m.ratioStreamer.isStreaming {
-				m.PlayRatio()
-			} else {
+		case "s":
+			if m.ratioStreamer.isStreaming && !m.edoStreamer.isStreaming {
 				m.PauseRatio()
+				m.PlayEDO()
+			} else if m.edoStreamer.isStreaming && !m.ratioStreamer.isStreaming {
+				m.PauseEDO()
+				m.PlayRatio()
+			}
+		case "S":
+			m.PauseRatio()
+			m.PauseEDO()
+		case "p":
+			if m.ratioStreamer.isStreaming {
+				m.PauseRatio()
+			} else {
+				m.PlayRatio()
 			}
 		case "P":
-			if !m.edoStreamer.isStreaming {
-				m.PlayEDO()
-			} else {
+			if m.edoStreamer.isStreaming {
 				m.PauseEDO()
+			} else {
+				m.PlayEDO()
 			}
 		case "enter":
 			m.SetRatio()
 			m.ClearRatioStreamer()
 			m.ClearEDOStreamer()
 			m.PlayRatio()
+			m.SetEDOStreamer()
 			m.input.CursorEnd()
 		}
 	}
+
+	m.ratioStreamer, cmd = m.ratioStreamer.Update(msg)
+	m.ratioStreamer, cmd = m.ratioStreamer.Update(msg)
 	return m, cmd
 }
 
 func (m model) View() string {
-	currentRatio := ""
-	currentEDO := ""
-	if m.ratioStreamer.isStreaming {
-		r, _ := m.ratioStreamer.playable.(intonation.Ratio)
-		currentRatio = fmt.Sprintf("%s (%s)",
-			m.ratioStreamer.playable.String(),
-			r.Approximate12EDOInterval().String(),
-		)
+	streamerStyle := lipgloss.NewStyle().
+		Width(20).
+		Height(10).
+		AlignHorizontal(lipgloss.Center).
+		AlignVertical(lipgloss.Center).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("63"))
+
+	streamCommands := ""
+	if m.ratioStreamer.isStreaming || m.edoStreamer.isStreaming {
+		streamCommands = "(S)top all\n\n(s)wap"
 	}
-	if m.edoStreamer.isStreaming {
-		currentEDO = m.edoStreamer.playable.String()
-	}
+	ratioStreamer := streamerStyle.Render(m.ratioStreamer.View())
+	edoStreamer := streamerStyle.Render(m.edoStreamer.View())
+	commands := streamerStyle.Render(streamCommands)
+
+	streamers := lipgloss.JoinHorizontal(lipgloss.Center, ratioStreamer, commands, edoStreamer)
+
+	centerStyle := lipgloss.NewStyle().
+		Width(64).
+		Align(lipgloss.Center)
+
+	inputStyle := lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("63"))
+
 	return fmt.Sprintf(
-		"Enter a Just Intonation ratio (q to quit)\n\nplaying: %-10s %s\n\n%s\n\n============\n\n%-10s (%s)",
-		currentRatio,
-		currentEDO,
-		m.input.View(),
-		m.ratio,
-		m.ratio.Approximate12EDOInterval().String(),
+		"Enter a Just Intonation ratio (q to quit)\n\n%s\n%s\n",
+		inputStyle.Render(
+			fmt.Sprintf(
+				"%s\n%s",
+				centerStyle.Render(
+					inputStyle.Render(
+						m.input.View(),
+					),
+				),
+				centerStyle.Render(
+					fmt.Sprintf(
+						"%-10s (%s)",
+						m.ratio,
+						m.ratio.Approximate12EDOInterval().String(),
+					),
+				),
+			),
+		),
+		streamers,
 	)
 }
 
@@ -146,8 +215,18 @@ func (m *model) PlayRatio() {
 		playable:    m.ratio,
 		stream:      &beep.Ctrl{},
 		isStreaming: false,
+		triggerKey:  "p",
 	}
 	m.ratioStreamer.Stream(m.output)
+}
+
+func (m *model) SetEDOStreamer() {
+	m.edoStreamer = &streamer{
+		playable:    m.edo,
+		stream:      &beep.Ctrl{},
+		isStreaming: false,
+		triggerKey:  "P",
+	}
 }
 
 func (m *model) PauseRatio() {
@@ -163,9 +242,7 @@ func (m *model) ClearRatioStreamer() {
 }
 
 func (m *model) PlayEDO() {
-	m.edoStreamer = &streamer{
-		playable: m.edo,
-	}
+	m.edoStreamer.playable = m.edo
 	m.edoStreamer.Stream(m.output)
 }
 
