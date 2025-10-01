@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -52,7 +53,7 @@ type StreamerModel struct {
 	playable    intonation.Playable
 	streamer    *beep.Ctrl
 	isStreaming bool
-	trigger     string
+	trigger     key.Binding
 	spinner     spinner.Model
 	output      audio.AudioOutput
 }
@@ -76,7 +77,12 @@ func (m StreamerModel) Pause() tea.Msg {
 func NewStreamerModel(id StreamerID, trigger string, output audio.AudioOutput) StreamerModel {
 	s := spinner.New()
 	s.Spinner = sineSpinner
-	return StreamerModel{id: id, trigger: trigger, spinner: s, output: output}
+	return StreamerModel{
+		id:      id,
+		trigger: key.NewBinding(key.WithKeys(trigger)),
+		spinner: s,
+		output:  output,
+	}
 }
 
 func (m StreamerModel) Init() tea.Cmd {
@@ -87,6 +93,12 @@ func (m StreamerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
+	case ClearRatioMsg:
+		m.isStreaming = false
+		if m.streamer != nil {
+			m.output.PauseStream(context.Background(), m.streamer)
+		}
+		m.playable = nil
 	case PlayMsg:
 		if msg.id == m.id {
 			m.isStreaming = true
@@ -101,8 +113,8 @@ func (m StreamerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.KeyMsg:
-		switch msg.String() {
-		case m.trigger:
+		switch {
+		case key.Matches(msg, m.trigger):
 			if m.isStreaming {
 				m.isStreaming = false
 				cmd = m.Pause

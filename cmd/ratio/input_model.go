@@ -39,22 +39,14 @@ func (m InputModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-var allowedKeys = key.NewBinding(
-	key.WithKeys(
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "/", "backspace", "left", "right",
-	),
-	key.WithHelp("0-9, /", "enter JI ratio"),
-)
-
-var enterKeys = key.NewBinding(
-	key.WithKeys("enter", "return"),
-	key.WithHelp("Enter", "set the ratio"),
-)
-
 func setRatios(ratio intonation.Ratio) tea.Cmd {
 	return func() tea.Msg {
 		return SetRatioMsg{ratio: ratio}
 	}
+}
+
+func (m InputModel) ClearRatio() tea.Msg {
+	return ClearRatioMsg{}
 }
 
 func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -70,6 +62,11 @@ func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, allowedKeys):
 			m.input, cmd = m.input.Update(msg)
 			m.UpdateRatio()
+		case key.Matches(msg, clearKeys):
+			m.ratio = intonation.Ratio{Numer: 0, Denom: 0}
+			m.input.SetValue("")
+			cmd = m.ClearRatio
+
 		}
 	}
 	return m, cmd

@@ -1,6 +1,8 @@
 package ratio
 
 import (
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -11,13 +13,17 @@ type Model struct {
 	input         InputModel
 	ratioStreamer StreamerModel
 	edoStreamer   StreamerModel
+	help          help.Model
 }
 
 func NewRatioUI(output audio.AudioOutput) Model {
+	help := help.New()
+	help.ShowAll = true
 	return Model{
 		input:         NewInputModel(),
 		ratioStreamer: NewStreamerModel("ratio", "p", output),
 		edoStreamer:   NewStreamerModel("edo", "P", output),
+		help:          help,
 	}
 }
 
@@ -33,6 +39,8 @@ type PauseMsg struct {
 	id StreamerID
 }
 
+type ClearRatioMsg struct{}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -42,14 +50,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.edoStreamer.setPlayable(msg.ratio.Approximate12EDOInterval().Interval())
 		cmds = append(cmds, m.ratioStreamer.Play, m.edoStreamer.Pause)
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "s":
+		switch {
+		case key.Matches(msg, muteAll):
+			cmds = append(cmds, m.ratioStreamer.Pause, m.edoStreamer.Pause)
+		case key.Matches(msg, swap):
 			if m.ratioStreamer.isStreaming && !m.edoStreamer.isStreaming {
 				cmds = append(cmds, m.ratioStreamer.Pause, m.edoStreamer.Play)
 			} else if m.edoStreamer.isStreaming && !m.ratioStreamer.isStreaming {
 				cmds = append(cmds, m.edoStreamer.Pause, m.ratioStreamer.Play)
 			}
-		case "ctrl+c", "q":
+		case key.Matches(msg, quitKeys):
 			return m, tea.Quit
 		}
 	}
@@ -76,5 +86,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	streamers := lipgloss.JoinHorizontal(lipgloss.Top, m.ratioStreamer.View(), m.edoStreamer.View())
-	return m.input.View() + "\n" + streamers + "\n"
+	return m.input.View() + "\n" + streamers + "\n" + helpStyle.Render(m.help.View(RatioKeymap())) + "\n"
 }
+
+var helpStyle = lipgloss.NewStyle().
+	Width(62).AlignHorizontal(lipgloss.Center)
